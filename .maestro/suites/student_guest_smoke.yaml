@@ -12,6 +12,7 @@ env:
 - runFlow: ../guest/store.yaml
 - runFlow: ../guest/bus.yaml
 - runFlow: ../guest/dining.yaml
+- runFlow: ../feature/dining_detail_header_collapse_regression.yaml
 - runFlow: ../guest/timetable.yaml
 - runFlow: ../guest/club.yaml
 - runFlow: ../guest/callvan.yaml
