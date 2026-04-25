@@ -102,7 +102,6 @@ class FindPasswordVerificationViewModel @Inject constructor(
     }
 
     private fun sendVerificationCode() = intent {
-        postSideEffect(FindPasswordVerificationSideEffect.StartTimer)
         if (state.isSms) {
             requestSmsVerificationUseCase(state.verificationMethod)
         } else {
@@ -118,6 +117,7 @@ class FindPasswordVerificationViewModel @Inject constructor(
                     verificationCodeState = VerificationCodeState.None
                 )
             }
+            postSideEffect(FindPasswordVerificationSideEffect.StartTimer)
         }.onFailure {
             reduce {
                 state.copy(
