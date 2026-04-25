@@ -13,6 +13,8 @@ env:
 - runFlow: ../guest/bus.yaml
 - runFlow: ../guest/dining.yaml
 - runFlow: ../feature/dining_detail_header_collapse_regression.yaml
+- runFlow: ../feature/dining_detail_tab_switch_regression.yaml
+- runFlow: ../feature/dining_detail_pull_to_refresh_regression.yaml
 - runFlow: ../guest/timetable.yaml
 - runFlow: ../guest/club.yaml
 - runFlow: ../guest/callvan.yaml

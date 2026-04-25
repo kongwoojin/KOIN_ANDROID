@@ -27,7 +27,9 @@ class DiningNestedScrollConnection(
                 if (consumed != 0f) {
                     scope.launch { state.snapOffset(newOffset) }
                     Offset(0f, consumed)
-                } else Offset.Zero
+                } else {
+                    Offset.Zero
+                }
             } else {
                 Offset.Zero // 아직 top 미도달
             }
