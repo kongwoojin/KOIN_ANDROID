@@ -133,6 +133,8 @@ class DiningViewModel @Inject constructor(
                     }
                     .onFailure {
                         _dining.value = listOf()
+                        _isLoading.value = false
+                        _isDiningRefreshing.value = false
                     }
             }
         }
