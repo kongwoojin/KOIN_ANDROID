@@ -32,6 +32,7 @@ import `in`.koreatech.koin.feature.club.model.toParcelizeClubRecruitment
 import `in`.koreatech.koin.feature.club.navigation.CLUB_ID
 import `in`.koreatech.koin.feature.club.type.EventSearchType
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -148,6 +149,10 @@ class ClubDetailViewModel @Inject constructor(
                         showQnasProgressBar = false
                     )
                 }
+            }.onFailure { e ->
+                if (e is CancellationException) throw e
+                reduce { state.copy(isLoading = false, showQnasProgressBar = false) }
+                postSideEffect(ClubDetailSideEffect.UnknownError)
             }
         }
     }
