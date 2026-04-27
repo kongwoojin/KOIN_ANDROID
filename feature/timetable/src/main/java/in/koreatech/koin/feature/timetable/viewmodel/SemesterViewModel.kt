@@ -20,6 +20,7 @@ import `in`.koreatech.koin.feature.timetable.model.SemesterModel
 import `in`.koreatech.koin.feature.timetable.state.SemesterSideEffect
 import `in`.koreatech.koin.feature.timetable.utils.toSemesterModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -241,6 +242,10 @@ class SemesterViewModel @Inject constructor(
                         updateUserTimetableFrames(
                             screenState.value.userTimetableFrames - semester
                         )
+                    }.onFailure {
+                        if (it is CancellationException) throw it
+                        val errorMessage = it.message ?: SEMESTER_DELETE_FAILURE_MESSAGE
+                        _sideEffect.value = SemesterSideEffect.Toast(errorMessage)
                     }
                 } else {
                     addSemesterUseCase(semester.toSemester()).onSuccess { addedFrame ->
@@ -248,9 +253,9 @@ class SemesterViewModel @Inject constructor(
                             (screenState.value.userTimetableFrames + (semester to listOf(addedFrame))).toSortedMap()
                         )
                     }.onFailure {
-                        it.message?.let { errorMessage ->
-                            _sideEffect.value = SemesterSideEffect.Toast(errorMessage)
-                        }
+                        if (it is CancellationException) throw it
+                        val errorMessage = it.message ?: SEMESTER_ADD_FAILURE_MESSAGE
+                        _sideEffect.value = SemesterSideEffect.Toast(errorMessage)
                     }
                 }
             }
@@ -422,6 +427,11 @@ class SemesterViewModel @Inject constructor(
         _currentTimetableSemester.value = ""
         _currentTimetableName.value = ""
         _currentTimetableId.value = -1
+    }
+
+    companion object {
+        private const val SEMESTER_DELETE_FAILURE_MESSAGE = "학기 삭제에 실패했습니다."
+        private const val SEMESTER_ADD_FAILURE_MESSAGE = "학기 추가에 실패했습니다."
     }
 }
 
