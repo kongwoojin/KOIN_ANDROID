@@ -13,6 +13,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 class BusRepositoryImpl @Inject constructor(
     private val busRemoteDataSource: BusRemoteDataSource,
@@ -21,25 +22,25 @@ class BusRepositoryImpl @Inject constructor(
     override suspend fun fetchBusNotice(): Result<BusNotice> {
         return runCatching {
             busRemoteDataSource.fetchBusNotice().toBusNotice()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun fetchShuttleTimetable(id: String): Result<ShuttleTimetable> {
         return runCatching {
             busRemoteDataSource.fetchShuttleTimetable(id).toShuttleTimetable()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun fetchShuttleCourses(): Result<ShuttleCourses> {
         return runCatching {
             busRemoteDataSource.fetchShuttleCourses().toShuttleCourses()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun fetchExpressTimetable(direction: String): Result<ExpressTimetable> {
         return runCatching {
             busRemoteDataSource.fetchExpressTimetable(direction).toExpressTimetable()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun fetchCityTimetable(
@@ -48,7 +49,7 @@ class BusRepositoryImpl @Inject constructor(
     ): Result<CityTimetable> {
         return runCatching {
             busRemoteDataSource.fetchCityTimetable(number, direction).toCityTimetable()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun fetchBusSearchResult(
@@ -66,18 +67,18 @@ class BusRepositoryImpl @Inject constructor(
                 departure = departure,
                 arrival = arrival
             ).schedules?.map { it.toBusSearchResult() }.orEmpty()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun getLastShownNoticeId(): Result<Int> {
         return runCatching {
             busLocalDataSource.getLastShownNoticeId()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun saveLastShownNoticeId(id: Int): Result<Unit> {
         return runCatching {
             busLocalDataSource.saveLastShownNoticeId(id)
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 }

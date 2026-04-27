@@ -37,13 +37,6 @@ class ChatRepositoryImpl @Inject constructor(
             chatRemoteDataSource.getChatRoomFromArticleId(articleId).toChatRoom()
         }.mapHttpFailure {
             on(403) throws KoinChatException.BlockedException()
-        }.onFailure {
-            return Result.failure(
-                when (it) {
-                    is CancellationException -> throw it
-                    else -> it
-                }
-            )
         }
     }
 
@@ -53,7 +46,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): Result<ChatRoom> {
         return runCatching {
             chatRemoteDataSource.getChatRoom(articleId, chatRoomId).toChatRoom()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun getChatMessages(
@@ -62,13 +55,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): Result<List<ChatMessage>> {
         return runCatching {
             chatRemoteDataSource.getChatMessages(articleId, chatRoomId).map { it.toChatMessage() }
-        }.onFailure {
-            if (it is CancellationException) {
-                throw it
-            } else {
-                return Result.failure(it)
-            }
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override fun subscribeChatRoom(

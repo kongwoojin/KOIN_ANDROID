@@ -24,6 +24,7 @@ import `in`.koreatech.koin.domain.model.timetable.response.TimetableLecture
 import `in`.koreatech.koin.domain.model.timetable.response.TimetableLectures
 import `in`.koreatech.koin.domain.repository.TimetableRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
@@ -63,7 +64,7 @@ class TimetableRepositoryImpl @Inject constructor(
     override suspend fun getTimetableLectures(timetableFrameId: Int): Result<TimetableLectures> =
         runCatching {
             timetableRemoteDataSource.getTimetableLectures(timetableFrameId).toTimetableLectures()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun getTimetableLectures(semester: String): Result<TimetableLectures> =
         runCatching {
@@ -74,12 +75,12 @@ class TimetableRepositoryImpl @Inject constructor(
             } catch (e: NullPointerException) {
                 TimetableLectures(0, emptyList(), 0, 0)
             }
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun putTimetableLectures(lectures: TimetableLecturesQuery): Result<TimetableLectures> =
         runCatching {
             timetableRemoteDataSource.putTimetableLectures(lectures.toTimetableLecturesQueryRequest()).toTimetableLectures()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun putTimetableLectures(
         key: String,
@@ -93,7 +94,7 @@ class TimetableRepositoryImpl @Inject constructor(
                 }.onFailure {
                     Result.failure<TimetableLectures>(it)
                 }
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun putTimetableFrame(
         id: Int,
@@ -108,7 +109,7 @@ class TimetableRepositoryImpl @Inject constructor(
                         frame.isMain
                     )
                 ).toTimetableFrame()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun postTimetableLectures(
         frameId: Int,
@@ -122,7 +123,7 @@ class TimetableRepositoryImpl @Inject constructor(
                         timetableLecture = lectures.map { it.toLectureQueryRequest() }
                     )
                 ).toTimetableLectures()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun postTimetableCustomLectures(
         frameId: Int,
@@ -151,7 +152,7 @@ class TimetableRepositoryImpl @Inject constructor(
                         timetableLecture = listOf(query)
                     )
                 ).toTimetableLectures()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun postTimetableBasicLectures(
         frameId: Int,
@@ -174,7 +175,7 @@ class TimetableRepositoryImpl @Inject constructor(
                         timetableLecture = queryLectures
                     )
                 ).toTimetableLectures()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun postTimetableFrame(frame: TimetableFrameCreateQuery): Result<TimetableFrame> =
         runCatching {
@@ -191,22 +192,24 @@ class TimetableRepositoryImpl @Inject constructor(
             } else {
                 throw it
             }
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun postRollbackFrame(frameId: Int): Result<TimetableLectures> =
         runCatching {
             timetableRemoteDataSource.postRollbackFrame(frameId).toTimetableLectures()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun deleteTimetableFrame(frameId: Int): Result<Unit> =
         runCatching {
             timetableRemoteDataSource.deleteTimetableFrame(frameId)
-        }
+            Unit
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun deleteTimetableLecture(id: Int): Result<Unit> =
         runCatching {
             timetableRemoteDataSource.deleteTimetableLecture(id)
-        }
+            Unit
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun deleteTimetableFrameLecture(
         frameId: Int,
@@ -214,7 +217,8 @@ class TimetableRepositoryImpl @Inject constructor(
     ): Result<Unit> =
         runCatching {
             timetableRemoteDataSource.deleteTimetableFrameLecture(frameId, lectureId)
-        }
+            Unit
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun deleteTimetableLectures(lectureIds: List<Int>): Result<Unit> =
         runCatching {
@@ -222,10 +226,11 @@ class TimetableRepositoryImpl @Inject constructor(
             if (!response.isSuccessful) {
                 throw HttpException(response)
             }
-        }
+        }.onFailure { if (it is CancellationException) throw it }
 
     override suspend fun deleteAllTimetableFrame(semester: String): Result<Unit> =
         runCatching {
             timetableRemoteDataSource.deleteAllTimetableFrame(semester)
-        }
+            Unit
+        }.onFailure { if (it is CancellationException) throw it }
 }

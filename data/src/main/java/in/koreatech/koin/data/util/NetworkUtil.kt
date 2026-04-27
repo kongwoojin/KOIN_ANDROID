@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import `in`.koreatech.koin.data.response.ErrorResponse
 import `in`.koreatech.koin.domain.error.KoinErrorException
 import `in`.koreatech.koin.domain.error.KoinUnknownErrorException
+import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 
 fun HttpException.getErrorResponse(): ErrorResponse {
@@ -28,6 +29,7 @@ fun <T> Result<T>.mapHttpFailure(
     e500: KoinErrorException? = null
 ): Result<T> {
     val exception = exceptionOrNull() ?: return this
+    if (exception is CancellationException) throw exception
     if (exception is HttpException) {
         val default = exception.getErrorResponse().toKoinUnknownErrorException()
         val mapped = when (exception.code()) {
@@ -67,6 +69,7 @@ fun <T> Result<T>.mapHttpFailure(
     block: HttpExceptionMapper.() -> Unit
 ): Result<T> {
     val exception = exceptionOrNull() ?: return this
+    if (exception is CancellationException) throw exception
     if (exception !is HttpException) return this
     val mapper = HttpExceptionMapper(exception)
     mapper.block()

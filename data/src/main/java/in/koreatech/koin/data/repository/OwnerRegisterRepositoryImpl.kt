@@ -52,6 +52,8 @@ class OwnerRegisterRepositoryImpl(
             Result.failure(e)
         } catch (e: HttpException) {
             Result.failure(e)
+        } catch (e: CancellationException) {
+            throw e
         } catch (t: Throwable) {
             Result.failure(t)
         }

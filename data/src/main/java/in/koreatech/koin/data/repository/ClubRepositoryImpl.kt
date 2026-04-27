@@ -27,6 +27,7 @@ import `in`.koreatech.koin.domain.model.club.ClubSearch
 import `in`.koreatech.koin.domain.model.club.Clubs
 import `in`.koreatech.koin.domain.repository.ClubRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
 
 class ClubRepositoryImpl @Inject constructor(
@@ -35,13 +36,13 @@ class ClubRepositoryImpl @Inject constructor(
     override suspend fun getClubsCategories(): Result<ClubCategories> {
         return runCatching {
             clubRemoteDataSource.getClubsCategories().toClubCategories()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun getClubHot(): Result<ClubHot> {
         return runCatching {
             clubRemoteDataSource.getClubHot().toClubHot()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun getClubs(
@@ -149,7 +150,7 @@ class ClubRepositoryImpl @Inject constructor(
     override suspend fun getClubQnas(clubId: Int): Result<ClubQnasInfo> {
         return runCatching {
             clubRemoteDataSource.getClubQnas(clubId).toClubQnasInfo()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun setClubLike(clubId: Int): Result<Unit> {

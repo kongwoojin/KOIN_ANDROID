@@ -18,6 +18,7 @@ import `in`.koreatech.koin.domain.model.callvan.CallvanPostDetail
 import `in`.koreatech.koin.domain.model.callvan.CallvanPostSearch
 import `in`.koreatech.koin.domain.repository.CallvanRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 class CallvanRepositoryImpl @Inject constructor(
     private val callvanRemoteDataSource: CallvanRemoteDataSource
@@ -181,13 +182,13 @@ class CallvanRepositoryImpl @Inject constructor(
     override suspend fun getNotifications(): Result<List<CallvanNotification>> {
         return runCatching {
             callvanRemoteDataSource.getNotifications().map { it.toCallvanNotification() }
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun deleteAllNotifications(): Result<Unit> {
         return runCatching {
             callvanRemoteDataSource.deleteAllNotifications()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun deleteNotification(
@@ -197,7 +198,7 @@ class CallvanRepositoryImpl @Inject constructor(
             callvanRemoteDataSource.deleteNotification(
                 notificationId = notificationId
             )
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun markNotificationAsRead(
@@ -207,13 +208,13 @@ class CallvanRepositoryImpl @Inject constructor(
             callvanRemoteDataSource.markNotificationAsRead(
                 notificationId = notificationId
             )
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun markAllNotificationsAsRead(): Result<Unit> {
         return runCatching {
             callvanRemoteDataSource.markAllNotificationsAsRead()
-        }
+        }.onFailure { if (it is CancellationException) throw it }
     }
 
     override suspend fun completeCallvanPost(
