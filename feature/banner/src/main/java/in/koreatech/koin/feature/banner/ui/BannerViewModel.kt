@@ -12,10 +12,12 @@ import `in`.koreatech.koin.feature.banner.model.BannerState
 import `in`.koreatech.koin.feature.banner.model.toLocalBanner
 import javax.inject.Inject
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
@@ -52,12 +54,18 @@ class BannerViewModel @Inject constructor(
         ).filterNotNull()
 
     private fun fetchBanners() = viewModelScope.launch {
-        getBannersByCategoryUseCase(MAIN_BANNER_CATEGORY).collectLatest {
-            _bannerState.value = _bannerState.value.copy(
-                bannerList = it.map { banner -> banner.toLocalBanner() }.toImmutableList(),
-                isLoading = false
-            )
-        }
+        getBannersByCategoryUseCase(MAIN_BANNER_CATEGORY)
+            .catch {
+                if (it is CancellationException) throw it
+                Timber.e(it)
+                _bannerState.value = _bannerState.value.copy(isLoading = false)
+            }
+            .collectLatest {
+                _bannerState.value = _bannerState.value.copy(
+                    bannerList = it.map { banner -> banner.toLocalBanner() }.toImmutableList(),
+                    isLoading = false
+                )
+            }
     }
 
     private fun fetchCurrentVersionCode() = viewModelScope.launch {
