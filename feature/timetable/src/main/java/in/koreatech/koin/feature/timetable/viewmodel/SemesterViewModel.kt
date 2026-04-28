@@ -244,8 +244,8 @@ class SemesterViewModel @Inject constructor(
                         )
                     }.onFailure {
                         if (it is CancellationException) throw it
-                        val errorMessage = it.message ?: SEMESTER_DELETE_FAILURE_MESSAGE
-                        _sideEffect.value = SemesterSideEffect.Toast(errorMessage)
+                        // TODO: Migrate _sideEffect to SharedFlow/Channel to deliver all failures.
+                        _sideEffect.value = SemesterSideEffect.Toast(SEMESTER_DELETE_FAILURE_MESSAGE)
                     }
                 } else {
                     addSemesterUseCase(semester.toSemester()).onSuccess { addedFrame ->
@@ -254,8 +254,8 @@ class SemesterViewModel @Inject constructor(
                         )
                     }.onFailure {
                         if (it is CancellationException) throw it
-                        val errorMessage = it.message ?: SEMESTER_ADD_FAILURE_MESSAGE
-                        _sideEffect.value = SemesterSideEffect.Toast(errorMessage)
+                        // TODO: Migrate _sideEffect to SharedFlow/Channel to deliver all failures.
+                        _sideEffect.value = SemesterSideEffect.Toast(SEMESTER_ADD_FAILURE_MESSAGE)
                     }
                 }
             }
