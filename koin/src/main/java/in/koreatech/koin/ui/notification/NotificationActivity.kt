@@ -113,6 +113,7 @@ class NotificationActivity : ActivityBase() {
             notificationShopEvent.isEnabled = true
             notificationReviewPrompt.isEnabled = true
             notificationDiningImageUpload.isEnabled = true
+            notificationCallvan.isEnabled = true
         }
     }
 
@@ -125,6 +126,7 @@ class NotificationActivity : ActivityBase() {
             notificationShopEvent.disableAll()
             notificationReviewPrompt.disableAll()
             notificationDiningImageUpload.disableAll()
+            notificationCallvan.disableAll()
         }
     }
 
@@ -179,6 +181,14 @@ class NotificationActivity : ActivityBase() {
 
                                     SubscribesType.MARKETING ->
                                         with(binding.notificationMarketing) {
+                                            if (isChecked != it.isPermit) {
+                                                fakeChecked = it.isPermit
+                                                isChecked = it.isPermit
+                                            }
+                                        }
+
+                                    SubscribesType.CALLVAN ->
+                                        with(binding.notificationCallvan) {
                                             if (isChecked != it.isPermit) {
                                                 fakeChecked = it.isPermit
                                                 isChecked = it.isPermit
@@ -273,6 +283,10 @@ class NotificationActivity : ActivityBase() {
                 if (isChecked) "on" else "off"
             )
             handleSubscription(isChecked, SubscribesType.DINING_IMAGE_UPLOAD)
+        }
+
+        binding.notificationCallvan.setOnSwitchClickListener { isChecked ->
+            handleSubscription(isChecked, SubscribesType.CALLVAN)
         }
     }
 

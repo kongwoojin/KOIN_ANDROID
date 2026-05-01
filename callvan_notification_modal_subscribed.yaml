@@ -1,0 +1,38 @@
+appId: in.koreatech.koin.dev
+env:
+  TEST_ID: dummy_test_id
+  TEST_PASSWORD: dummy_test_password
+  TEST_ID_SUBSCRIBED: dummy_subscribed_id
+  TEST_PASSWORD_SUBSCRIBED: dummy_subscribed_password
+---
+# Cold start
+- stopApp
+- openLink: "koin://main/navigation"
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "닫기"
+    optional: true
+# 구독 활성 계정 로그인
+- openLink: "koin://login/navigation"
+- extendedWaitUntil:
+    visible: "로그인"
+    timeout: 15000
+- tapOn: "아이디(Koreatech ID/전화번호)"
+- inputText: ${TEST_ID_SUBSCRIBED}
+- tapOn: "비밀번호"
+- inputText: ${TEST_PASSWORD_SUBSCRIBED}
+- hideKeyboard
+- tapOn: "로그인"
+- extendedWaitUntil:
+    visible: "게시판"
+    timeout: 15000
+# 콜밴팟 진입 → CALLVAN 구독 활성 → 모달 미표시
+- openLink: "koin://callvan/navigation"
+- waitForAnimationToEnd:
+    timeout: 15000
+- assertVisible: "콜밴팟"
+# GET /notification 응답 수신 후에도 모달 미표시 확인 (race condition 방지)
+- extendedWaitUntil:
+    notVisible: "알림을 켜볼까요?"
+    timeout: 10000

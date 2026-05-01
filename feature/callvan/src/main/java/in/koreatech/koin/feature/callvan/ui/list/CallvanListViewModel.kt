@@ -1,6 +1,7 @@
 package `in`.koreatech.koin.feature.callvan.ui.list
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `in`.koreatech.koin.domain.model.notification.SubscribesType
 import `in`.koreatech.koin.domain.model.user.User
 import `in`.koreatech.koin.domain.usecase.callvan.CloseCallvanPostUseCase
 import `in`.koreatech.koin.domain.usecase.callvan.CompleteCallvanPostUseCase
@@ -9,6 +10,7 @@ import `in`.koreatech.koin.domain.usecase.callvan.GetNotificationsUseCase
 import `in`.koreatech.koin.domain.usecase.callvan.JoinCallvanPostUseCase
 import `in`.koreatech.koin.domain.usecase.callvan.LeaveCallvanPostUseCase
 import `in`.koreatech.koin.domain.usecase.callvan.ReopenCallvanPostUseCase
+import `in`.koreatech.koin.domain.usecase.notification.GetNotificationPermissionInfoUseCase
 import `in`.koreatech.koin.domain.usecase.user.GetUserStatusUseCase
 import `in`.koreatech.koin.feature.callvan.ui.list.model.CallvanConfirmType
 import `in`.koreatech.koin.feature.callvan.ui.list.model.CallvanFilterType
@@ -40,7 +42,8 @@ class CallvanListViewModel @Inject constructor(
     private val reopenCallvanPostUseCase: ReopenCallvanPostUseCase,
     private val completeCallvanPostUseCase: CompleteCallvanPostUseCase,
     private val getNotificationsUseCase: GetNotificationsUseCase,
-    private val getUserStatusUseCase: GetUserStatusUseCase
+    private val getUserStatusUseCase: GetUserStatusUseCase,
+    private val getNotificationPermissionInfoUseCase: GetNotificationPermissionInfoUseCase
 ) : ViewModel(), ContainerHost<CallvanListState, CallvanListSideEffect> {
 
     override val container = container<CallvanListState, CallvanListSideEffect>(
@@ -63,10 +66,8 @@ class CallvanListViewModel @Inject constructor(
 
     private fun initUserInfo() = intent {
         getUserStatusUseCase().collectLatest { user ->
-            intent {
-                reduce {
-                    state.copy(isLoggedIn = user !is User.Anonymous)
-                }
+            reduce {
+                state.copy(isLoggedIn = user !is User.Anonymous)
             }
         }
     }
@@ -83,6 +84,43 @@ class CallvanListViewModel @Inject constructor(
             reduce {
                 state.copy(hasNewNotification = false)
             }
+        }
+    }
+
+    internal fun fetchNotificationPermission() {
+        intent {
+            if (!state.isLoggedIn) {
+                reduce { state.copy(isCallvanNotificationModalVisible = false) }
+                return@intent
+            }
+            val (info, error) = getNotificationPermissionInfoUseCase()
+            if (error != null) {
+                // API 실패 시 모달을 표시하지 않음 (기존 상태 유지)
+                return@intent
+            }
+
+            if (info != null) {
+                reduce {
+                    // Defensive check: validate isLoggedIn at reduce time to prevent race condition
+                    // where user logs out while API call is pending, and delayed response overwrites
+                    // the loggedOut state with modal visible state
+                    if (!state.isLoggedIn) {
+                        state.copy(isCallvanNotificationModalVisible = false)
+                    } else {
+                        state.copy(
+                            isCallvanNotificationModalVisible = info.subscribes.none {
+                                it.type == SubscribesType.CALLVAN && it.isPermit
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun dismissCallvanNotificationModal() {
+        blockingIntent {
+            reduce { state.copy(isCallvanNotificationModalVisible = false) }
         }
     }
 

@@ -171,7 +171,7 @@
                             android:textColor="@color/neutral_600"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/notification_chat" />
+                            app:layout_constraintTop_toBottomOf="@+id/notification_callvan" />
 
                         <in.koreatech.koin.core.view.notificaiton.NotificationHeader
                             android:id="@+id/notification_shop_event"
@@ -277,6 +277,30 @@
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@id/cl_goto_article_keyword"
                             app:text="@string/notification_chat" />
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/text_view_callvan"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:background="@color/gray2"
+                            android:paddingHorizontal="24dp"
+                            android:paddingVertical="4dp"
+                            android:text="@string/notification_callvan_section"
+                            android:textAppearance="@style/TextAppearance.Koin.Medium.14"
+                            android:textColor="@color/neutral_600"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/notification_chat" />
+
+                        <in.koreatech.koin.core.view.notificaiton.NotificationHeader
+                            android:id="@+id/notification_callvan"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            app:description="@string/notification_callvan_description"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/text_view_callvan"
+                            app:text="@string/notification_callvan" />
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </ScrollView>

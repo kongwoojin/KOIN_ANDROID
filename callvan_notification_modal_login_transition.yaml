@@ -1,0 +1,47 @@
+appId: in.koreatech.koin.dev
+env:
+  TEST_ID: dummy_test_id
+  TEST_PASSWORD: dummy_test_password
+  TEST_ID_SUBSCRIBED: dummy_subscribed_id
+  TEST_PASSWORD_SUBSCRIBED: dummy_subscribed_password
+---
+# Cold start
+- stopApp
+- openLink: "koin://callvan/navigation"
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "닫기"
+    optional: true
+# 비로그인 상태 → 모달 미표시
+- assertVisible: "콜밴팟"
+- assertNotVisible: "알림을 켜볼까요?"
+# 필터 적용으로 로그인 유도 (DEEPLINK_CALLVAN hand-off 경로 사용이 핵심)
+# tapOn "필터": CallvanFilterChip은 Surface + Text("필터") 조합; 텍스트로 탭 가능
+- tapOn: "필터"
+- extendedWaitUntil:
+    visible: "목록"
+    timeout: 10000
+- tapOn: "내 게시물"
+- tapOn: "적용하기"
+# 필터 auto-dismiss 후 로그인 바텀시트 표시
+- extendedWaitUntil:
+    visible: "콜밴팟에 참여하려면 로그인이 필요해요."
+    timeout: 10000
+- tapOn: "로그인하기"
+# SignInActivity 진입 (link = "koin://callvan/navigation" extra 포함)
+- extendedWaitUntil:
+    visible: "로그인"
+    timeout: 15000
+- tapOn: "아이디(Koreatech ID/전화번호)"
+- inputText: ${TEST_ID}
+- tapOn: "비밀번호"
+- inputText: ${TEST_PASSWORD}
+- hideKeyboard
+- tapOn: "로그인"
+# FLAG_ACTIVITY_CLEAR_TOP → koin://callvan/navigation 복귀
+# state.isLoggedIn false→true 전환 → LaunchedEffect 재실행 → fetchNotificationPermission() → 모달
+- extendedWaitUntil:
+    visible: "알림을 켜볼까요?"
+    timeout: 15000
+- assertVisible: "알림을 켜볼까요?"
