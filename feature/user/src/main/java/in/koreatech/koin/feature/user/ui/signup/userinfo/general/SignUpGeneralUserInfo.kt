@@ -1,5 +1,7 @@
 package `in`.koreatech.koin.feature.user.ui.signup.userinfo.general
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,6 +24,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -54,10 +57,12 @@ fun SignUpGeneralUserInfo(
     navigateToNextScreen: () -> Unit
 ) {
     val uiState by viewModel.collectAsState()
+    val context = LocalContext.current
 
     viewModel.collectSideEffect {
         handleSideEffect(
             sideEffect = it,
+            context = context,
             navigateToNextScreen = navigateToNextScreen
         )
     }
@@ -406,6 +411,7 @@ private fun SignUpGeneralUserInfoNickNameEmailStep(
 
 private fun handleSideEffect(
     sideEffect: SignUpGeneralSideEffect,
+    context: Context,
     navigateToNextScreen: () -> Unit
 ) {
     when (sideEffect) {
@@ -419,7 +425,10 @@ private fun handleSideEffect(
         }
 
         is SignUpGeneralSideEffect.SignUpFailure -> {
-            // TODO: Handle sign up failure
+            val message = sideEffect.message.ifBlank {
+                context.getString(R.string.sign_up_user_info_sign_up_failed)
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 }

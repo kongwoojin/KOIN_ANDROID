@@ -19,6 +19,7 @@ import `in`.koreatech.koin.domain.model.user.Graduated
 import `in`.koreatech.koin.domain.repository.SignupRepository
 import `in`.koreatech.koin.domain.util.ext.toSHA256
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import retrofit2.HttpException
 
 class SignupRepositoryImpl @Inject constructor(
@@ -131,7 +132,12 @@ class SignupRepositoryImpl @Inject constructor(
             )
             Result.success(Unit)
         } catch (e: HttpException) {
-            Result.failure(e)
+            val message = runCatching { e.getErrorResponse().message }.getOrNull().orEmpty()
+            Result.failure(Throwable(message))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (t: Throwable) {
+            Result.failure(t)
         }
     }
 
@@ -176,7 +182,12 @@ class SignupRepositoryImpl @Inject constructor(
             )
             Result.success(Unit)
         } catch (e: HttpException) {
-            Result.failure(e)
+            val message = runCatching { e.getErrorResponse().message }.getOrNull().orEmpty()
+            Result.failure(Throwable(message))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (t: Throwable) {
+            Result.failure(t)
         }
     }
 }

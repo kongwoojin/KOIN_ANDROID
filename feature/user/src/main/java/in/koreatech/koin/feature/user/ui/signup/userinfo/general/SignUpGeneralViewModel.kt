@@ -190,7 +190,7 @@ class SignUpGeneralViewModel @Inject constructor(
         ).onSuccess {
             postSideEffect(SignUpGeneralSideEffect.SignUpSuccess)
         }.onFailure {
-            postSideEffect(SignUpGeneralSideEffect.SignUpFailure)
+            postSideEffect(SignUpGeneralSideEffect.SignUpFailure(it.message ?: ""))
         }
     }
 }
