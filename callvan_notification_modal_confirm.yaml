@@ -1,0 +1,59 @@
+appId: in.koreatech.koin.dev
+env:
+  TEST_ID: dummy_test_id
+  TEST_PASSWORD: dummy_test_password
+  TEST_ID_SUBSCRIBED: dummy_subscribed_id
+  TEST_PASSWORD_SUBSCRIBED: dummy_subscribed_password
+---
+# Cold start
+- stopApp
+- openLink: "koin://main/navigation"
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "닫기"
+    optional: true
+# 로그인
+- openLink: "koin://login/navigation"
+- extendedWaitUntil:
+    visible: "로그인"
+    timeout: 15000
+- tapOn: "아이디(Koreatech ID/전화번호)"
+- inputText: ${TEST_ID}
+- tapOn: "비밀번호"
+- inputText: ${TEST_PASSWORD}
+- hideKeyboard
+- tapOn: "로그인"
+- extendedWaitUntil:
+    visible: "게시판"
+    timeout: 15000
+# 콜밴팟 진입 → 모달 표시
+- openLink: "koin://callvan/navigation"
+- extendedWaitUntil:
+    visible: "알림을 켜볼까요?"
+    timeout: 15000
+- assertVisible: "알림을 켜볼까요?"
+# "알림 켜기" → NotificationActivity 진입
+- tapOn: "알림 켜기"
+- extendedWaitUntil:
+    visible: "알림 설정"
+    timeout: 15000
+# 콜밴팟 섹션은 notification_chat 아래 ScrollView 하단에 위치 → 스크롤 필수
+- scrollUntilVisible:
+    element:
+      id: "${APP_ID}:id/notification_callvan"
+    direction: DOWN
+    timeout: 15000
+# 콜밴팟 섹션 헤더 (text_view_callvan: notification_callvan_section = "콜밴팟")
+- assertVisible:
+    id: "${APP_ID}:id/text_view_callvan"
+# 콜밴팟 토글 행 제목 및 설명 (notification_callvan = "콜밴팟 알림")
+- assertVisible: "콜밴팟 알림"
+- assertVisible: "콜밴팟 채팅 및 출발 관련 알림을 받습니다."
+# 뒤로 가기 → ActivityResultLauncher 콜백 → fetchNotificationPermission() 재조회
+- back
+# CALLVAN 미구독 상태이므로 모달 재표시
+- extendedWaitUntil:
+    visible: "알림을 켜볼까요?"
+    timeout: 15000
+- assertVisible: "알림을 켜볼까요?"

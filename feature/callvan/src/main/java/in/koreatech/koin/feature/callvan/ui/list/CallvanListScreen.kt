@@ -1,5 +1,7 @@
 package `in`.koreatech.koin.feature.callvan.ui.list
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +36,7 @@ import `in`.koreatech.koin.core.designsystem.component.snackbar.showSnackBarWith
 import `in`.koreatech.koin.core.designsystem.component.topbar.KoinTopAppBar
 import `in`.koreatech.koin.core.designsystem.noRippleClickable
 import `in`.koreatech.koin.core.designsystem.theme.RebrandKoinTheme
+import `in`.koreatech.koin.core.navigation.utils.rememberNavigator
 import `in`.koreatech.koin.feature.callvan.R
 import `in`.koreatech.koin.feature.callvan.ui.component.CallvanConfirmBottomSheet
 import `in`.koreatech.koin.feature.callvan.ui.component.CallvanNotificationIcon
@@ -57,6 +61,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 
 @Composable
 fun CallvanListScreen(
+    modifier: Modifier = Modifier,
     viewModel: CallvanListViewModel = hiltViewModel(),
     onTopbarBackClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
@@ -69,6 +74,13 @@ fun CallvanListScreen(
     val state by viewModel.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val navigator = rememberNavigator()
+
+    val notificationSettingLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        viewModel.fetchNotificationPermission()
+    }
 
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
@@ -94,9 +106,11 @@ fun CallvanListScreen(
 
     LaunchedEffect(state.isLoggedIn) {
         viewModel.fetchHasNewNotification()
+        viewModel.fetchNotificationPermission()
     }
 
     CallvanListScreenImpl(
+        modifier = modifier,
         searchValue = state.searchValue,
         items = state.items,
         filterState = state.filterState,
@@ -107,6 +121,7 @@ fun CallvanListScreen(
         hasMoreItems = state.hasMoreItems,
         pendingConfirm = state.pendingConfirm,
         pendingCompletePostId = state.pendingCompletePostId,
+        isCallvanNotificationModalVisible = state.isCallvanNotificationModalVisible,
         onSearchValueChange = viewModel::updateSearch,
         onFilterApply = viewModel::applyFilter,
         onFilterVisibleChange = viewModel::updateFilterVisible,
@@ -118,6 +133,10 @@ fun CallvanListScreen(
         onWriteClick = onWriteClick,
         onLoginClick = onLoginClick,
         onLoginVisibleChange = viewModel::updateLoginVisible,
+        onNotificationSettingClick = {
+            notificationSettingLauncher.launch(navigator.navigateToNotificationSetting(context))
+        },
+        onDismissCallvanNotificationModal = viewModel::dismissCallvanNotificationModal,
         onJoin = viewModel::join,
         onCancelJoin = viewModel::cancelJoin,
         onClose = viewModel::close,
@@ -143,6 +162,7 @@ fun CallvanListScreenImpl(
     hasMoreItems: Boolean = true,
     pendingConfirm: Pair<CallvanConfirmType, Int>? = null,
     pendingCompletePostId: Int? = null,
+    isCallvanNotificationModalVisible: Boolean = false,
     onSearchValueChange: (String) -> Unit = {},
     onFilterVisibleChange: (Boolean) -> Unit = {},
     onPendingConfirmChange: (Pair<CallvanConfirmType, Int>?) -> Unit = {},
@@ -160,6 +180,8 @@ fun CallvanListScreenImpl(
     onWriteClick: () -> Unit = {},
     onLoginClick: () -> Unit = {},
     onLoginVisibleChange: (Boolean) -> Unit = {},
+    onNotificationSettingClick: () -> Unit = {},
+    onDismissCallvanNotificationModal: () -> Unit = {},
     onJoin: (Int) -> Unit = {},
     onCancelJoin: (Int) -> Unit = {},
     onClose: (Int) -> Unit = {},
@@ -168,9 +190,16 @@ fun CallvanListScreenImpl(
     onCall: (Int) -> Unit = {},
     onChat: (Int) -> Unit = {},
     onDetailClick: (Int) -> Unit = {},
+    modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val listState = rememberLazyListState()
+
+    val currentOnPendingConfirm by rememberUpdatedState(onPendingConfirmChange)
+    val currentOnCompletePostId by rememberUpdatedState(onPendingCompletePostIdChange)
+    val currentOnCall by rememberUpdatedState(onCall)
+    val currentOnChat by rememberUpdatedState(onChat)
+    val currentOnDetailClick by rememberUpdatedState(onDetailClick)
 
     LaunchedEffect(listState, hasMoreItems, isLoadingMore, items.size) {
         snapshotFlow {
@@ -232,6 +261,20 @@ fun CallvanListScreenImpl(
         )
     }
 
+    if (isCallvanNotificationModalVisible) {
+        CallvanConfirmBottomSheet(
+            title = stringResource(R.string.callvan_notification_prompt_title),
+            description = stringResource(R.string.callvan_notification_prompt_description),
+            confirmText = stringResource(R.string.callvan_notification_prompt_confirm),
+            cancelText = stringResource(R.string.callvan_notification_prompt_cancel),
+            onConfirm = {
+                onDismissCallvanNotificationModal()
+                onNotificationSettingClick()
+            },
+            onDismiss = onDismissCallvanNotificationModal
+        )
+    }
+
     if (isLoginVisible) {
         CallvanConfirmBottomSheet(
             title = stringResource(R.string.callvan_login_title),
@@ -246,7 +289,7 @@ fun CallvanListScreenImpl(
         )
     }
 
-    Box {
+    Box(modifier = modifier) {
         Scaffold(
             topBar = {
                 KoinTopAppBar(
@@ -310,32 +353,33 @@ fun CallvanListScreenImpl(
                 }
 
                 items(items, key = { it.id }) { uiState ->
-                    val actions = remember(uiState.id) {
+                    val actions = remember {
                         CallvanListItemActions(
-                            onJoin = { onPendingConfirmChange(Pair(CallvanConfirmType.JOIN, uiState.id)) },
-                            onCancelJoin = { onPendingConfirmChange(Pair(CallvanConfirmType.CANCEL_JOIN, uiState.id)) },
-                            onClose = { onPendingConfirmChange(Pair(CallvanConfirmType.CLOSE, uiState.id)) },
-                            onReRecruit = { onPendingConfirmChange(Pair(CallvanConfirmType.REOPEN, uiState.id)) },
-                            onComplete = { onPendingCompletePostIdChange(uiState.id) },
+                            onJoin = { currentOnPendingConfirm(Pair(CallvanConfirmType.JOIN, uiState.id)) },
+                            onCancelJoin = { currentOnPendingConfirm(Pair(CallvanConfirmType.CANCEL_JOIN, uiState.id)) },
+                            onClose = { currentOnPendingConfirm(Pair(CallvanConfirmType.CLOSE, uiState.id)) },
+                            onReRecruit = { currentOnPendingConfirm(Pair(CallvanConfirmType.REOPEN, uiState.id)) },
+                            onComplete = { currentOnCompletePostId(uiState.id) },
                             onCall = {
                                 EventLogger.logCampusClickEvent(
                                     AnalyticsConstant.Label.Callvan.CALLVAN_CALL,
                                     ""
                                 )
-                                onCall(uiState.id)
+                                currentOnCall(uiState.id)
                             },
                             onChat = {
                                 EventLogger.logCampusClickEvent(
                                     AnalyticsConstant.Label.Callvan.CALLVAN_CHAT,
                                     ""
                                 )
-                                onChat(uiState.id)
+                                currentOnChat(uiState.id)
                             }
                         )
                     }
+                    val onItemClick = remember { { currentOnDetailClick(uiState.id) } }
                     CallvanListItem(
                         uiState = uiState,
-                        onItemClick = { onDetailClick(uiState.id) },
+                        onItemClick = onItemClick,
                         actions = actions
                     )
                 }

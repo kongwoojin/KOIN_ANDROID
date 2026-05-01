@@ -1,0 +1,51 @@
+appId: in.koreatech.koin.dev
+env:
+  TEST_ID: dummy_test_id
+  TEST_PASSWORD: dummy_test_password
+  TEST_ID_SUBSCRIBED: dummy_subscribed_id
+  TEST_PASSWORD_SUBSCRIBED: dummy_subscribed_password
+---
+# Cold start
+- stopApp
+- openLink: "koin://main/navigation"
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "닫기"
+    optional: true
+# 로그인
+- openLink: "koin://login/navigation"
+- extendedWaitUntil:
+    visible: "로그인"
+    timeout: 15000
+- tapOn: "아이디(Koreatech ID/전화번호)"
+- inputText: ${TEST_ID}
+- tapOn: "비밀번호"
+- inputText: ${TEST_PASSWORD}
+- hideKeyboard
+- tapOn: "로그인"
+- extendedWaitUntil:
+    visible: "게시판"
+    timeout: 15000
+# 콜밴팟 진입 → 모달 표시
+- openLink: "koin://callvan/navigation"
+- extendedWaitUntil:
+    visible: "알림을 켜볼까요?"
+    timeout: 15000
+- assertVisible: "알림을 켜볼까요?"
+- assertVisible: "채팅부터 출발까지, 필요한 순간을 놓치지 않게 알려드려요"
+- assertVisible: "알림 켜기"
+- assertVisible: "나중에 할게요"
+# "나중에 할게요" dismiss
+- tapOn: "나중에 할게요"
+- extendedWaitUntil:
+    notVisible: "알림을 켜볼까요?"
+    timeout: 10000
+- assertVisible: "콜밴팟"
+# 재진입 → 모달 재표시 (영구 suppress 없음)
+- back
+- openLink: "koin://callvan/navigation"
+- extendedWaitUntil:
+    visible: "알림을 켜볼까요?"
+    timeout: 15000
+- assertVisible: "알림을 켜볼까요?"
