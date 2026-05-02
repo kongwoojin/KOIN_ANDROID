@@ -33,6 +33,7 @@ import `in`.koreatech.koin.feature.timetable.utils.toTimetableEvents
 import `in`.koreatech.koin.feature.timetable.view.TimetableBottomSheetContentMode
 import javax.inject.Inject
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -69,7 +70,7 @@ class TimetableViewModel @Inject constructor(
     val searchEngineState: StateFlow<SearchEngineState> = _searchEngineState.asStateFlow()
 
     private val _lectures = MutableStateFlow<List<Lecture>>(emptyList())
-    val lectures =
+    val lectures: StateFlow<List<Lecture>> =
         combine(_searchEngineState, _lectures) { searchEngineState, lectures ->
             if (searchEngineState.text.isBlank() && searchEngineState.department.isBlank()) {
                 lectures
@@ -121,8 +122,9 @@ class TimetableViewModel @Inject constructor(
                                     loading = false
                                 )
                         }.onFailure {
+                            if (it is CancellationException) throw it
                             updateLoading(false)
-                            _sideEffect.value = TimetableSideEffect.Toast("Failed get timetable lectures : " + it.message.orEmpty())
+                            _sideEffect.value = TimetableSideEffect.Toast("시간표 강의를 불러오지 못했습니다.")
                         }
                 }
 
@@ -152,8 +154,9 @@ class TimetableViewModel @Inject constructor(
                                     loading = false
                                 )
                         }.onFailure {
+                            if (it is CancellationException) throw it
                             updateLoading(false)
-                            _sideEffect.value = TimetableSideEffect.Toast("Failed get timetable lectures : " + it.message.orEmpty())
+                            _sideEffect.value = TimetableSideEffect.Toast("시간표 강의를 불러오지 못했습니다.")
                         }
                 }
             }
@@ -198,8 +201,9 @@ class TimetableViewModel @Inject constructor(
                                     loading = false
                                 )
                         }.onFailure {
+                            if (it is CancellationException) throw it
                             updateLoading(false)
-                            _sideEffect.value = TimetableSideEffect.Toast("Failed get timetable lectures : " + it.message.orEmpty())
+                            _sideEffect.value = TimetableSideEffect.Toast("시간표 강의를 불러오지 못했습니다.")
                         }
                 }
                 false -> {
@@ -248,8 +252,9 @@ class TimetableViewModel @Inject constructor(
                                     loading = false
                                 )
                         }.onFailure {
+                            if (it is CancellationException) throw it
                             updateLoading(false)
-                            _sideEffect.value = TimetableSideEffect.Toast("Failed get timetable lectures : " + it.message.orEmpty())
+                            _sideEffect.value = TimetableSideEffect.Toast("시간표 강의를 불러오지 못했습니다.")
                         }
                 }
             }
@@ -258,19 +263,22 @@ class TimetableViewModel @Inject constructor(
 
     private suspend fun getSemester(isAnonymous: Boolean): List<String> {
         return getSemesterUseCase(isAnonymous).catch {
-            _sideEffect.value = TimetableSideEffect.Toast("Failed get semester : " + it.message.orEmpty())
+            if (it is CancellationException) throw it
+            _sideEffect.value = TimetableSideEffect.Toast("학기 정보를 불러오지 못했습니다.")
         }.firstOrNull().orEmpty()
     }
 
     private suspend fun getLectures(semester: String): List<Lecture> {
         return getLecturesUseCase(semester).catch {
+            if (it is CancellationException) throw it
             _lectures.value = emptyList()
         }.firstOrNull().orEmpty()
     }
 
     private suspend fun getTimetableFrames(semester: String): List<TimetableFrame> {
         return getTimetableFramesUseCase(semester).catch {
-            _sideEffect.value = TimetableSideEffect.Toast("Failed get timetable frame : " + it.message.orEmpty())
+            if (it is CancellationException) throw it
+            _sideEffect.value = TimetableSideEffect.Toast("시간표 정보를 불러오지 못했습니다.")
         }.firstOrNull().orEmpty()
     }
 
@@ -617,8 +625,9 @@ class TimetableViewModel @Inject constructor(
                 _customContentState.value = CustomContentState()
                 updateIsLectureDuplicationDialogVisible(false)
             }.onFailure {
+                if (it is CancellationException) throw it
                 updateLoading(false)
-                _sideEffect.value = TimetableSideEffect.Toast("Failed add timetable lectures : " + it.message.orEmpty())
+                _sideEffect.value = TimetableSideEffect.Toast("강의 추가에 실패했습니다.")
             }
         }
     }
@@ -666,11 +675,13 @@ class TimetableViewModel @Inject constructor(
                             addTimetableLectures(lecture)
                         } ?: return@onSuccess
                     }.onFailure {
+                        if (it is CancellationException) throw it
+                        updateLoading(false)
                         _dialogState.value =
                             _dialogState.value.copy(
                                 isLectureDuplicationVisible = false
                             )
-                        _sideEffect.value = TimetableSideEffect.Toast("Failed delete timetable lectures : " + it.message.orEmpty())
+                        _sideEffect.value = TimetableSideEffect.Toast("강의 삭제에 실패했습니다.")
                     }
                 }
             }
@@ -746,8 +757,9 @@ class TimetableViewModel @Inject constructor(
                             )
                         updateIsLectureDuplicationDialogVisible(false)
                     }.onFailure {
+                        if (it is CancellationException) throw it
                         updateLoading(false)
-                        _sideEffect.value = TimetableSideEffect.Toast("Failed add timetable lectures : " + it.message.orEmpty())
+                        _sideEffect.value = TimetableSideEffect.Toast("강의 추가에 실패했습니다.")
                     }
                 }
             }
@@ -811,12 +823,14 @@ class TimetableViewModel @Inject constructor(
                                         loading = false
                                     )
                             }.onFailure {
+                                if (it is CancellationException) throw it
                                 updateLoading(false)
-                                _sideEffect.value = TimetableSideEffect.Toast("Failed get timetable lectures : " + it.message.orEmpty())
+                                _sideEffect.value = TimetableSideEffect.Toast("시간표 강의를 불러오지 못했습니다.")
                             }
                     }.onFailure {
+                        if (it is CancellationException) throw it
                         updateLoading(false)
-                        _sideEffect.value = TimetableSideEffect.Toast("Failed delete timetable lectures : " + it.message.orEmpty())
+                        _sideEffect.value = TimetableSideEffect.Toast("강의 삭제에 실패했습니다.")
                     }
                 }
             }
@@ -825,61 +839,72 @@ class TimetableViewModel @Inject constructor(
 
     fun removeTimetableLectureById(id: Int) {
         if (state.value.isAnonymous) {
-            val updatedTimetableLectures = _state.value.timetableLectures.timetable.toMutableList()
-            updatedTimetableLectures.removeIf { it.id == id }
-            val timetables =
-                _state.value.timetableLectures.copy(
-                    timetable = updatedTimetableLectures
-                )
+            removeTimetableLectureByIdAnonymous(id)
+        } else {
+            removeTimetableLectureByIdNonAnonymous(id)
+        }
+    }
 
-            viewModelScope.launch {
-                updateLoading(true)
-                timetableRepository.putTimetableLectures(state.value.currentSemester, timetables)
+    private fun removeTimetableLectureByIdAnonymous(id: Int) {
+        val updatedTimetableLectures = _state.value.timetableLectures.timetable.toMutableList()
+        updatedTimetableLectures.removeIf { it.id == id }
+        val timetables =
+            _state.value.timetableLectures.copy(
+                timetable = updatedTimetableLectures
+            )
+
+        viewModelScope.launch {
+            updateLoading(true)
+            timetableRepository.putTimetableLectures(state.value.currentSemester, timetables)
+                .onSuccess { timetableLectures ->
+                    _state.value =
+                        _state.value.copy(
+                            range = timetableLectures.formatTimeRange(),
+                            timetableLectures = timetableLectures,
+                            timetableEvents = timetableLectures.getTimetableEvents(),
+                            clickedTimetableEvents = emptyList(),
+                            etcClickedTimetableEvents = emptyList(),
+                            bottomSheetCollapse = true,
+                            selectedLecture = null,
+                            loading = false
+                        )
+                    updateIsLectureDuplicationDialogVisible(false)
+                }.onFailure {
+                    if (it is CancellationException) throw it
+                    updateLoading(false)
+                    updateIsLectureDuplicationDialogVisible(false)
+                    _sideEffect.value = TimetableSideEffect.Toast("강의 수정에 실패했습니다.")
+                }
+        }
+    }
+
+    private fun removeTimetableLectureByIdNonAnonymous(id: Int) {
+        viewModelScope.launch {
+            updateLoading(true)
+            deleteTimetableLectureUseCase(id).onSuccess {
+                timetableRepository.getTimetableLectures(state.value.frameId)
                     .onSuccess { timetableLectures ->
                         _state.value =
                             _state.value.copy(
                                 range = timetableLectures.formatTimeRange(),
-                                timetableLectures = timetableLectures,
+                                frameId = timetableLectures.timetableFrameId,
                                 timetableEvents = timetableLectures.getTimetableEvents(),
                                 clickedTimetableEvents = emptyList(),
                                 etcClickedTimetableEvents = emptyList(),
                                 bottomSheetCollapse = true,
                                 selectedLecture = null,
+                                timetableLectures = timetableLectures,
                                 loading = false
                             )
-                        updateIsLectureDuplicationDialogVisible(false)
                     }.onFailure {
+                        if (it is CancellationException) throw it
                         updateLoading(false)
-                        updateIsLectureDuplicationDialogVisible(false)
-                        _sideEffect.value = TimetableSideEffect.Toast("Failed put timetable lectures : " + it.message.orEmpty())
+                        _sideEffect.value = TimetableSideEffect.Toast("시간표 강의를 불러오지 못했습니다.")
                     }
-            }
-        } else {
-            viewModelScope.launch {
-                updateLoading(true)
-                deleteTimetableLectureUseCase(id).onSuccess {
-                    timetableRepository.getTimetableLectures(state.value.frameId)
-                        .onSuccess { timetableLectures ->
-                            _state.value =
-                                _state.value.copy(
-                                    range = timetableLectures.formatTimeRange(),
-                                    frameId = timetableLectures.timetableFrameId,
-                                    timetableEvents = timetableLectures.getTimetableEvents(),
-                                    clickedTimetableEvents = emptyList(),
-                                    etcClickedTimetableEvents = emptyList(),
-                                    bottomSheetCollapse = true,
-                                    selectedLecture = null,
-                                    timetableLectures = timetableLectures,
-                                    loading = false
-                                )
-                        }.onFailure {
-                            updateLoading(false)
-                            _sideEffect.value = TimetableSideEffect.Toast("Failed get timetable lectures : " + it.message.orEmpty())
-                        }
-                }.onFailure {
-                    updateLoading(false)
-                    _sideEffect.value = TimetableSideEffect.Toast("Failed delete timetable lectures by id : " + it.message.orEmpty())
-                }
+            }.onFailure {
+                if (it is CancellationException) throw it
+                updateLoading(false)
+                _sideEffect.value = TimetableSideEffect.Toast("강의 삭제에 실패했습니다.")
             }
         }
     }
@@ -901,9 +926,10 @@ class TimetableViewModel @Inject constructor(
                         )
                     updateIsLectureDuplicationDialogVisible(false)
                 }.onFailure {
+                    if (it is CancellationException) throw it
                     updateLoading(false)
                     updateIsLectureDuplicationDialogVisible(false)
-                    _sideEffect.value = TimetableSideEffect.Toast("Failed put timetable lectures : " + it.message.orEmpty())
+                    _sideEffect.value = TimetableSideEffect.Toast("강의 수정에 실패했습니다.")
                 }
         }
     }
