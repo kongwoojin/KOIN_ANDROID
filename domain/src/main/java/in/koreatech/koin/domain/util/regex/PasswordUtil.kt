@@ -4,32 +4,26 @@ import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.regex.Pattern
 
-class PasswordUtil {
+object PasswordUtil {
     private fun hashString(
         message: String,
         algorithm: String
     ): String {
-        try {
+        return try {
             val digest = MessageDigest.getInstance(algorithm)
-            digest.update(message.toByteArray())
+            digest.update(message.toByteArray(Charsets.UTF_8))
             val hashedBytes = digest.digest()
 
-            // Create Hex String
-            val hexString = StringBuilder()
-            for (hashedByte in hashedBytes) {
-                val h = StringBuilder(Integer.toHexString(0xFF and hashedByte.toInt()))
-                while (h.length < 2) h.insert(0, "0")
-                hexString.append(h)
-            }
-            return hexString.toString()
+            // Create Hex String using joinToString for efficiency
+            // 부호 확장 방지: 0xFF and 마스킹으로 하위 8비트만 취함
+            hashedBytes.joinToString("") { "%02x".format(it.toInt() and 0xFF) }
         } catch (ex: NoSuchAlgorithmException) {
-            ex.printStackTrace()
+            ""
         }
-        return ""
     }
 
     fun generateSHA256(message: String): String {
-        return PasswordUtil().hashString(message, "SHA-256")
+        return hashString(message, "SHA-256")
     }
 
     // 비밀번호가 사용 가능한지 체크하는 메서드, 특수문자 1개 이상, 6~18
@@ -49,20 +43,19 @@ class PasswordUtil {
         return CONTAIN_SYMBOL_REGEX.matcher(password).matches()
     }
 
-    companion object {
-        // 허용되는 특수문자 클래스 본체 (총 33개)
-        private const val SPECIAL_CHARS_CLASS = """`₩~!@#$%<>^&*()\-=+_?:;"',.{}|\[\]/\\"""
+    // 허용되는 특수문자 클래스 본체 (기존 FILTER_PASSWORD에서 verbatim 추출, 33개 문자)
+    // 원본: `₩~!@#$%<>^&*()\-=+_?:;"',.{}|\[\]/\\
+    private const val SPECIAL_CHARS_CLASS = """`₩~!@#$%<>^&*()\-=+_?:;"',.{}|\[\]/\\"""
 
-        private val FILTER_PASSWORD = """^(?=.*[a-zA-Z])(?=.*[$SPECIAL_CHARS_CLASS])(?=.*[0-9]).{6,18}${'$'}"""
-        val PASSWORD_REGEX: Pattern = Pattern.compile(FILTER_PASSWORD)
+    private val FILTER_PASSWORD = """^(?=.*[a-zA-Z])(?=.*[$SPECIAL_CHARS_CLASS])(?=.*[0-9]).{6,18}${'$'}"""
+    val PASSWORD_REGEX: Pattern = Pattern.compile(FILTER_PASSWORD)
 
-        private const val FILTER_CONTAIN_ALPHABET = """.*[a-zA-Z].*"""
-        val CONTAIN_ALPHABET_REGEX = Pattern.compile(FILTER_CONTAIN_ALPHABET)
+    private const val FILTER_CONTAIN_ALPHABET = """.*[a-zA-Z].*"""
+    val CONTAIN_ALPHABET_REGEX: Pattern = Pattern.compile(FILTER_CONTAIN_ALPHABET)
 
-        private const val FILTER_CONTAIN_NUMBER = """.*[0-9].*"""
-        val CONTAIN_NUMBER_REGEX = Pattern.compile(FILTER_CONTAIN_NUMBER)
+    private const val FILTER_CONTAIN_NUMBER = """.*[0-9].*"""
+    val CONTAIN_NUMBER_REGEX: Pattern = Pattern.compile(FILTER_CONTAIN_NUMBER)
 
-        private val FILTER_CONTAIN_SYMBOL = """.*[$SPECIAL_CHARS_CLASS].*"""
-        val CONTAIN_SYMBOL_REGEX = Pattern.compile(FILTER_CONTAIN_SYMBOL)
-    }
+    private val FILTER_CONTAIN_SYMBOL = """.*[$SPECIAL_CHARS_CLASS].*"""
+    val CONTAIN_SYMBOL_REGEX: Pattern = Pattern.compile(FILTER_CONTAIN_SYMBOL)
 }

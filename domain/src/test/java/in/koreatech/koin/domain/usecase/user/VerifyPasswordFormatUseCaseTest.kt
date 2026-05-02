@@ -8,12 +8,10 @@ import org.junit.Test
 
 class VerifyPasswordFormatUseCaseTest {
     private lateinit var useCase: VerifyPasswordFormatUseCase
-    private lateinit var passwordUtil: PasswordUtil
 
     @Before
     fun setUp() {
         useCase = VerifyPasswordFormatUseCase()
-        passwordUtil = PasswordUtil()
     }
 
     @Test
@@ -123,7 +121,7 @@ class VerifyPasswordFormatUseCaseTest {
         // UI 피드백: 공백은 특수문자가 아님
         assertFalse(result.isIncludeSymbol)
         // 실제 유효성: 공백은 화이트리스트에 없으므로 통과 불가
-        assertFalse(passwordUtil.isPasswordValidate(password))
+        assertFalse(PasswordUtil.isPasswordValidate(password))
     }
 
     @Test
@@ -133,6 +131,6 @@ class VerifyPasswordFormatUseCaseTest {
         // UI 피드백: 화이트리스트 문자(!)는 특수문자로 인정
         assertTrue(result.isIncludeSymbol)
         // 실제 유효성: 영문 + 숫자 + 화이트리스트 특수문자 + 길이 충족 → 통과
-        assertTrue(passwordUtil.isPasswordValidate(password))
+        assertTrue(PasswordUtil.isPasswordValidate(password))
     }
 }

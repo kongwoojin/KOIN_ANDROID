@@ -12,7 +12,7 @@ fun String.isValidGeneralEmail(): Boolean = this.isBusinessValidEmail() // Busin
 
 fun String.isNotValidGeneralEmail() = !isValidGeneralEmail()
 
-fun String.isValidPassword() = PasswordUtil().isPasswordValidate(this)
+fun String.isValidPassword(): Boolean = PasswordUtil.isPasswordValidate(this)
 
 fun String.isNotValidEmail() = !isValidEmail()
 
