@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.shareIn
@@ -40,6 +41,9 @@ class ArticleKeywordViewModel @Inject constructor(
     private val deleteNotificationSubscriptionUseCase: DeleteNotificationSubscriptionUseCase,
     getUserStatusUseCase: GetUserStatusUseCase
 ) : BaseViewModel() {
+    private val addingKeywords = mutableSetOf<String>()
+    private val deletingKeywords = mutableSetOf<String>()
+
     val user: StateFlow<User> =
         getUserStatusUseCase()
             .stateIn(viewModelScope, SharingStarted.Eagerly, User.Anonymous)
@@ -111,12 +115,16 @@ class ArticleKeywordViewModel @Inject constructor(
             return
         }
 
+        if (!addingKeywords.add(trimmedKeyword)) return
+
         articleRepository.saveKeyword(trimmedKeyword).onStart {
             _keywordAddUiState.emit(KeywordAddUiState.Loading)
         }.onEach {
             _keywordAddUiState.emit(KeywordAddUiState.Success(trimmedKeyword))
         }.catch {
             _keywordAddUiState.emit(KeywordAddUiState.Error)
+        }.onCompletion {
+            addingKeywords.remove(trimmedKeyword)
         }.launchIn(viewModelScope)
     }
 
@@ -145,10 +153,14 @@ class ArticleKeywordViewModel @Inject constructor(
     }
 
     fun deleteKeyword(keyword: String) {
+        if (!deletingKeywords.add(keyword)) return
+
         articleRepository.deleteKeyword(keyword).onEach {
             _keywordAddUiState.emit(KeywordAddUiState.Success(keyword))
         }.catch {
             _keywordAddUiState.emit(KeywordAddUiState.Error)
+        }.onCompletion {
+            deletingKeywords.remove(keyword)
         }.launchIn(viewModelScope)
     }
 
