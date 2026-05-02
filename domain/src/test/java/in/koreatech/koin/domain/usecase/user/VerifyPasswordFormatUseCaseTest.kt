@@ -1,8 +1,9 @@
 package `in`.koreatech.koin.domain.usecase.user
 
 import `in`.koreatech.koin.domain.util.regex.PasswordUtil
-import junit.framework.TestCase.assertFalse
-import junit.framework.TestCase.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -132,5 +133,51 @@ class VerifyPasswordFormatUseCaseTest {
         assertTrue(result.isIncludeSymbol)
         // 실제 유효성: 영문 + 숫자 + 화이트리스트 특수문자 + 길이 충족 → 통과
         assertTrue(PasswordUtil.isPasswordValidate(password))
+    }
+
+    // 정규식 문자열 동일성 검증 (PLAN 체크리스트)
+    @Test
+    fun `PASSWORD_REGEX 정규식 문자열이 올바르게 생성되었다`() {
+        // specialCharsClass: PasswordUtil.kt:11의 SPECIAL_CHARS_CLASS와 동일한 raw string
+        val specialCharsClass = """`₩~!@#$%<>^&*()\-=+_?:;"',.{}|\[\]/\\"""
+        val expectedPattern =
+            """^(?=.*[a-zA-Z])(?=.*[$specialCharsClass])(?=.*[0-9])[a-zA-Z0-9$specialCharsClass]{6,18}$"""
+        assertEquals(expectedPattern, PasswordUtil.PASSWORD_REGEX.pattern())
+    }
+
+    @Test
+    fun `CONTAIN_SYMBOL_REGEX가 FILTER_PASSWORD와 동일한 화이트리스트 기준을 사용한다`() {
+        // 화이트리스트에 있는 문자는 양쪽 정규식 모두 매칭되어야 함
+        val whitelistSymbols = listOf(
+            "`", "₩", "~", "!", "@", "#", "$", "%",
+            "<", ">", "^", "&", "*", "(", ")", "-",
+            "=", "+", "_", "?", ":", ";", "\"", "'",
+            ",", ".", "{", "}", "|", "[", "]", "/", "\\"
+        )
+        for (symbol in whitelistSymbols) {
+            // 영문(abc) + 숫자(1) + 화이트리스트 특수문자 + 영문(d) = 6자 → isPasswordValidate 최소 길이 충족
+            val password = "abc1${symbol}d"
+            assertTrue(
+                "Symbol '$symbol' should match CONTAIN_SYMBOL_REGEX",
+                PasswordUtil.isContainSymbol(password)
+            )
+            assertTrue(
+                "Symbol '$symbol' should pass isPasswordValidate",
+                PasswordUtil.isPasswordValidate(password)
+            )
+        }
+    }
+
+    // 잔존 버그 회귀 테스트
+    @Test
+    fun `화이트리스트 특수문자와 공백이 함께 있으면 isPasswordValidate는 false를 반환한다`() {
+        // 수정 전 .{6,18}은 공백을 허용해 true → 수정 후 false
+        assertFalse(PasswordUtil.isPasswordValidate("abcde1! "))
+    }
+
+    @Test
+    fun `화이트리스트 특수문자와 이모지가 함께 있으면 isPasswordValidate는 false를 반환한다`() {
+        // 수정 전 .{6,18}은 이모지 서로게이트 페어를 허용해 true → 수정 후 false
+        assertFalse(PasswordUtil.isPasswordValidate("abc1!😀"))
     }
 }
