@@ -9,7 +9,7 @@
 0
 - detekt 위반 건수: 0
 0
-- Android lint 오류: 0, 경고: 915
+- Android lint 오류: 0, 경고: 0
 
 CRITICAL: 0
 MAJOR: 0

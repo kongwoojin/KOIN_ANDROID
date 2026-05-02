@@ -1,30 +1,29 @@
 # Completeness 리뷰
 
 ## Summary
-PLAN.md의 핵심 목적이었던 사용자 피드백 누락 보완과 삭제 성공 SnackBar 발행 위치 이동은 실제 코드에 반영돼 있습니다. 다만 구현 결과가 PLAN.md에서 합의한 최소 변경 범위를 넘어섰고, 그 범위 확장이 `IMPL.md`의 accepted 범위로 정리되지 않아 계획-구현 정합성에는 문제가 있습니다.
+`PLAN.md`와 `IMPL.md`에 명시된 구현 범위를 `origin/develop...HEAD` 기준 실제 변경과 대조한 결과, 계획된 코드 변경은 모두 반영되어 있습니다. PLAN 대상 파일 2개 모두 변경되었고, IMPL.md 기재 내용도 실제 diff와 일치하며, 범위 외 코드 파일 수정도 확인되지 않았습니다.
 
 ## 문제점
+발견된 구현 완전성 이슈 없음.
 
-### [MAJOR] 1. PLAN.md에서 무변경으로 둔다고 한 영역까지 실제 구현이 확장됐습니다
-파일 경로: [SemesterViewModel.kt](/home/kongjak/Work/Android/KOIN_ANDROID/.worktrees/KOIN_ANDROID-46/feature/timetable/src/main/java/in/koreatech/koin/feature/timetable/viewmodel/SemesterViewModel.kt:23)
+검증 근거:
+- `feature/timetable/src/main/java/in/koreatech/koin/feature/timetable/viewmodel/SemesterViewModel.kt`
+  - `initialScreenState.catch`에 Toast 추가 확인
+  - `onClickAddTimetable` 실패 Toast 추가 확인
+  - `editTimetableFrame` 실패 Toast 추가 확인
+  - `deleteTimetableFrame` 성공 SnackBar 이동 및 실패 Toast 추가 확인
+  - `restoreTimetableFrame` 실패 Toast 추가 확인
+- `koin/src/main/java/in/koreatech/koin/ui/timetablev2/TimetableSemesterActivity.kt`
+  - `onDeleteFrame`의 즉시 SnackBar 발행 제거 확인
+- `IMPL.md`
+  - 수정 파일 2개가 실제 git diff에 모두 존재
+  - 범위 외 수정 없음 주장과 실제 브랜치 diff 일치
+- PLAN 범위 외 코드 변경
+  - `origin/develop...HEAD` 기준 추가 코드 변경 파일 없음
+- 완료 조건
+  - 코드로 확인 가능한 구현 조건은 모두 충족
+  - 수동 시나리오 검증 및 `ktlintCheck` 실행 자체는 이 리뷰에서 재실행하지 못했으므로 문서 기재만 확인
 
-#### 리뷰 사항
-PLAN.md는 이 이슈를 “약 10줄” 수준의 수정으로 정의했고, 특히 `SemesterViewModel.kt`의 `import, 타입, 수집 방식은 일체 변경하지 않습니다`, `import, 타입, _sideEffect 선언 ... 변경 불필요`라고 명시했습니다. 그런데 실제 diff에는 다음과 같은 추가 확장이 포함돼 있습니다.
-
-- `CancellationException` import 추가: [SemesterViewModel.kt](/home/kongjak/Work/Android/KOIN_ANDROID/.worktrees/KOIN_ANDROID-46/feature/timetable/src/main/java/in/koreatech/koin/feature/timetable/viewmodel/SemesterViewModel.kt:23)
-- 삭제 중복 방지 상태 추가: `_isDeletingFrame`, `isDeletingFrame`: [SemesterViewModel.kt](/home/kongjak/Work/Android/KOIN_ANDROID/.worktrees/KOIN_ANDROID-46/feature/timetable/src/main/java/in/koreatech/koin/feature/timetable/viewmodel/SemesterViewModel.kt:104)
-- PLAN에 없던 학기 삭제 실패 Toast 추가: [SemesterViewModel.kt](/home/kongjak/Work/Android/KOIN_ANDROID/.worktrees/KOIN_ANDROID-46/feature/timetable/src/main/java/in/koreatech/koin/feature/timetable/viewmodel/SemesterViewModel.kt:250)
-- `refreshSemesterTimetableFrames()`의 catch 동작 변경: [SemesterViewModel.kt](/home/kongjak/Work/Android/KOIN_ANDROID/.worktrees/KOIN_ANDROID-46/feature/timetable/src/main/java/in/koreatech/koin/feature/timetable/viewmodel/SemesterViewModel.kt:393)
-- `restoreTimetableFrame()` 내부 구조 리팩터링: [SemesterViewModel.kt](/home/kongjak/Work/Android/KOIN_ANDROID/.worktrees/KOIN_ANDROID-46/feature/timetable/src/main/java/in/koreatech/koin/feature/timetable/viewmodel/SemesterViewModel.kt:349)
-
-이 중 `@Stable` 추가만 `IMPL.md`의 `범위 외 수정 (accepted)`에 적혀 있고, 나머지 범위 확장은 accepted로 정리되지 않았습니다. 즉, “계획한 변경을 그대로 수행했는지” 기준에서는 계획-구현 일치성이 깨졌습니다.
-
-#### 수정 방향
-다음 둘 중 하나로 정리돼야 합니다.
-
-- 실제 확장이 필요했다면, `PLAN.md`와 `IMPL.md`의 accepted 범위에 `_isDeletingFrame`, `CancellationException` 처리, 학기 삭제 실패 Toast, restore 로직 정리까지 명시해 범위 확장을 합의된 작업으로 문서화합니다.
-- 최소 변경 계획을 엄격히 지키려면, 이번 이슈 목적과 직접 무관한 확장 수정은 되돌리고 PLAN에 적힌 6개 변경만 남깁니다.
-
-CRITICAL: 0  
-MAJOR: 1  
+CRITICAL: 0
+MAJOR: 0
 MINOR: 0
