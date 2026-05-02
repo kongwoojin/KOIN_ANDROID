@@ -50,7 +50,10 @@ class PasswordUtil {
     }
 
     companion object {
-        private const val FILTER_PASSWORD = """^(?=.*[a-zA-Z])(?=.*[`₩~!@#$%<>^&*()\-=+_?:;"',.{}|\[\]/\\])(?=.*[0-9]).{6,18}${'$'}"""
+        // 허용되는 특수문자 클래스 본체 (총 33개)
+        private const val SPECIAL_CHARS_CLASS = """`₩~!@#$%<>^&*()\-=+_?:;"',.{}|\[\]/\\"""
+
+        private val FILTER_PASSWORD = """^(?=.*[a-zA-Z])(?=.*[$SPECIAL_CHARS_CLASS])(?=.*[0-9]).{6,18}${'$'}"""
         val PASSWORD_REGEX: Pattern = Pattern.compile(FILTER_PASSWORD)
 
         private const val FILTER_CONTAIN_ALPHABET = """.*[a-zA-Z].*"""
@@ -59,8 +62,7 @@ class PasswordUtil {
         private const val FILTER_CONTAIN_NUMBER = """.*[0-9].*"""
         val CONTAIN_NUMBER_REGEX = Pattern.compile(FILTER_CONTAIN_NUMBER)
 
-        // TODO::특수문자 명세 확인 후 수정
-        private const val FILTER_CONTAIN_SYMBOL = """.*[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ].*"""
+        private val FILTER_CONTAIN_SYMBOL = """.*[$SPECIAL_CHARS_CLASS].*"""
         val CONTAIN_SYMBOL_REGEX = Pattern.compile(FILTER_CONTAIN_SYMBOL)
     }
 }
