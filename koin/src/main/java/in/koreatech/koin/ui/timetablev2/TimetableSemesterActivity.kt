@@ -120,11 +120,6 @@ class TimetableSemesterActivity : ActivityBase() {
                         onDeleteFrame = {
                             viewModel.deleteTimetableFrame()
                             viewModel.updateEditTimetableDialogVisible(false)
-                            viewModel.updateSideEffect(
-                                SemesterSideEffect.SnackBar(
-                                    "${dialogUiState.editedTimetableFrame?.timetableName}가 삭제되었어요"
-                                )
-                            )
                         }
                     )
                 }
