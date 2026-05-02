@@ -7,9 +7,9 @@ import javax.inject.Inject
 class VerifyPasswordFormatUseCase @Inject constructor() {
     operator fun invoke(password: String): PasswordFormat {
         return PasswordFormat(
-            isIncludeEnglish = PasswordUtil().isContainAlphabet(password),
-            isIncludeNumber = PasswordUtil().isContainNumber(password),
-            isIncludeSymbol = PasswordUtil().isContainSymbol(password),
+            isIncludeEnglish = PasswordUtil.isContainAlphabet(password),
+            isIncludeNumber = PasswordUtil.isContainNumber(password),
+            isIncludeSymbol = PasswordUtil.isContainSymbol(password),
             isValidLength = password.length in 6..18
         )
     }

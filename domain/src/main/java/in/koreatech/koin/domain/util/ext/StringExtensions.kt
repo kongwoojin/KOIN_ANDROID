@@ -6,7 +6,7 @@ import `in`.koreatech.koin.domain.constant.INSTAGRAM_URL
 import `in`.koreatech.koin.domain.util.regex.PasswordUtil
 import `in`.koreatech.koin.domain.util.regex.RegexPatterns
 
-fun String.toSHA256() = PasswordUtil().generateSHA256(this)
+fun String.toSHA256(): String = PasswordUtil.generateSHA256(this)
 
 fun String.toUnderlineForHtml() = "<u>$this</u>"
 
