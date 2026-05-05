@@ -20,6 +20,7 @@ import `in`.koreatech.koin.feature.timetable.model.SemesterModel
 import `in`.koreatech.koin.feature.timetable.state.SemesterSideEffect
 import `in`.koreatech.koin.feature.timetable.utils.toSemesterModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -131,7 +132,9 @@ class SemesterViewModel @Inject constructor(
                 )
             )
         }.catch {
-            // TODO::hyeok Error 상태 추가
+            // 내부 catch 블록이 예외를 삼키므로 first()가 NoSuchElementException을 던질 수 있음.
+            // it.message는 내부 구현 메시지("Expected at least one element")가 노출될 수 있으므로 고정 문구 사용.
+            _sideEffect.value = SemesterSideEffect.Toast("시간표를 불러오지 못했어요.")
             emit(ScreenState())
         }
 
@@ -216,7 +219,11 @@ class SemesterViewModel @Inject constructor(
                     }
                 )
             }.onFailure {
+                if (it is CancellationException) throw it
                 Timber.d("시간표 추가 실패")
+                _sideEffect.value = SemesterSideEffect.Toast(
+                    it.message ?: "시간표 추가에 실패했어요."
+                )
             }
         }
     }
@@ -280,7 +287,11 @@ class SemesterViewModel @Inject constructor(
                     _currentTimetableName.value = timetableFrame.timetableName
                 }
             }.onFailure {
+                if (it is CancellationException) throw it
                 Timber.d("시간표 프레임 수정 실패")
+                _sideEffect.value = SemesterSideEffect.Toast(
+                    it.message ?: "시간표 수정에 실패했어요."
+                )
             }
         }
     }
@@ -302,23 +313,30 @@ class SemesterViewModel @Inject constructor(
                     // 시간표에서 선택한 프레임이 삭제된 경우..
                     if (currentTimetableId.value == target.id) {
                         // 학기가 함께 삭제된 경우 가장 최근 학기의 기본 시간표로 이동
-                        if (!screenState.value.userSemesters.contains(dialogUiState.value.editedSemester)) {
+                        if (dialogUiState.value.editedSemester !in screenState.value.userSemesters) {
                             updateCurrentTimetableDataToLatest()
-                            return@onSuccess
+                        } else {
+                            // 학기가 함께 삭제되지 않는 경우엔, 삭제된 시간표 대신 그 학기의 기본 시간표로 이동
+                            // 학기를 찾을 수 없으면, 가장 최근 시간표로 이동
+                            screenState.value.userTimetableFrames[currentTimetableSemester.value.toSemesterModel()]
+                                ?.find { it.isMain }
+                                ?.let {
+                                    _currentTimetableId.value = it.id
+                                    _currentTimetableName.value = it.timetableName
+                                } ?: updateCurrentTimetableDataToLatest()
                         }
-
-                        // 학기가 함께 삭제되지 않는 경우엔, 삭제된 시간표 대신 그 학기의 기본 시간표로 이동
-                        // 학기를 찾을 수 없으면, 가장 최근 시간표로 이동
-                        screenState.value.userTimetableFrames
-                            .get(currentTimetableSemester.value.toSemesterModel())
-                            ?.find { it.isMain }
-                            ?.let {
-                                _currentTimetableId.value = it.id
-                                _currentTimetableName.value = it.timetableName
-                            } ?: updateCurrentTimetableDataToLatest()
                     }
+
+                    // 모든 성공 경로에서 단 한 번 SnackBar 발행
+                    _sideEffect.value = SemesterSideEffect.SnackBar(
+                        "${target.timetableName}가 삭제되었어요"
+                    )
                 }.onFailure {
+                    if (it is CancellationException) throw it
                     Timber.d("시간표 프레임 삭제 실패")
+                    _sideEffect.value = SemesterSideEffect.Toast(
+                        it.message ?: "시간표 삭제에 실패했어요."
+                    )
                 }
             }
         }
@@ -359,8 +377,11 @@ class SemesterViewModel @Inject constructor(
                             _deletedFrameSemester.value = null
                         }
                         .onFailure {
-                            // TODO::hyeok 에러 핸들링
+                            if (it is CancellationException) throw it
                             Timber.d("롤백 실패")
+                            _sideEffect.value = SemesterSideEffect.Toast(
+                                it.message ?: "시간표 복구에 실패했어요."
+                            )
                         }
                 }
             }
