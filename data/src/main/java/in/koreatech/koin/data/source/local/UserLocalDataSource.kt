@@ -75,65 +75,53 @@ class UserLocalDataSource @Inject constructor(
         }
     }
 
-    // TODO::유저 정보 중 필수 값 확인 후 수정
     suspend fun updateUserInfo(user: User) {
         userDataStore.edit { pref ->
-            pref[PREF_KEY_USER_INFO] =
-                when (user) {
-                    is User.Student -> {
-                        Gson().toJson(
-                            StudentUserResponse(
-                                id = user.id,
-                                anonymousNickname = user.anonymousNickname,
-                                email = user.email,
-                                gender = user.gender.toInt(),
-                                major = user.major,
-                                name = user.name ?: "",
-                                nickname = user.nickname,
-                                phoneNumber = user.phoneNumber,
-                                studentNumber = user.studentNumber,
-                                userType = user.userType,
-                                loginId = user.loginId
-                            )
+            when (user) {
+                is User.Student -> {
+                    pref[PREF_KEY_USER_INFO] = Gson().toJson(
+                        StudentUserResponse(
+                            id = user.id,
+                            anonymousNickname = user.anonymousNickname,
+                            email = user.email,
+                            gender = user.gender.toInt(),
+                            major = user.major,
+                            name = user.name,
+                            nickname = user.nickname,
+                            phoneNumber = user.phoneNumber,
+                            studentNumber = user.studentNumber,
+                            userType = user.userType,
+                            loginId = user.loginId
                         )
-                    }
-
-                    is User.General -> {
-                        Gson().toJson(
-                            GeneralUserResponse(
-                                id = user.id,
-                                anonymousNickname = user.anonymousNickname,
-                                email = user.email,
-                                gender = user.gender.toInt()!!,
-                                name = user.name,
-                                nickname = user.nickname,
-                                phoneNumber = user.phoneNumber,
-                                userType = user.userType,
-                                loginId = user.loginId
-
-                            )
-                        )
-                    }
-
-                    else -> {
-                        ""
-                    }
+                    )
+                    pref[PREF_KEY_USER_TYPE] = user.userType
                 }
 
-            pref[PREF_KEY_USER_TYPE] =
-                when (user) {
-                    is User.Student -> {
-                        user.userType
+                is User.General -> {
+                    val genderInt = requireNotNull(user.gender.toInt()) {
+                        "Gender of User.General cannot be Unknown"
                     }
-
-                    is User.General -> {
-                        user.userType
-                    }
-
-                    else -> {
-                        ""
-                    }
+                    pref[PREF_KEY_USER_INFO] = Gson().toJson(
+                        GeneralUserResponse(
+                            id = user.id,
+                            anonymousNickname = user.anonymousNickname,
+                            email = user.email,
+                            gender = genderInt,
+                            name = user.name,
+                            nickname = user.nickname,
+                            phoneNumber = user.phoneNumber,
+                            userType = user.userType,
+                            loginId = user.loginId
+                        )
+                    )
+                    pref[PREF_KEY_USER_TYPE] = user.userType
                 }
+
+                is User.Anonymous -> {
+                    pref.remove(PREF_KEY_USER_INFO)
+                    pref.remove(PREF_KEY_USER_TYPE)
+                }
+            }
         }
     }
 
