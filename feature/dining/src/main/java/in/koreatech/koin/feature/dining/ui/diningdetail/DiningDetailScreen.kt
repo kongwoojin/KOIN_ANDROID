@@ -644,6 +644,8 @@ private fun DiningDetailScreenImpl(
     }
 }
 
+private const val PREVIEW_DUMMY_DATE = "2025.05.17"
+
 @Composable
 private fun DiningItemByABTest(
     experimentGroup: String,
@@ -720,7 +722,7 @@ private fun DiningScreenPreview() {
         diningList = listOf(
             Dining(
                 id = 0,
-                date = "2025.05.17",
+                date = PREVIEW_DUMMY_DATE,
                 type = "BREAKFAST",
                 place = "A코너",
                 priceCard = "1000",
@@ -728,14 +730,14 @@ private fun DiningScreenPreview() {
                 kcal = "786",
                 menu = listOf("밥", "국", "김치", "아침"),
                 imageUrl = "https://image.utoimage.com/preview/cp872722/2022/12/202212008462_500.jpg",
-                createdAt = "2025.05.17",
-                updatedAt = "2025.05.17",
+                createdAt = PREVIEW_DUMMY_DATE,
+                updatedAt = PREVIEW_DUMMY_DATE,
                 soldOutAt = "",
-                changedAt = "2025.05.17"
+                changedAt = PREVIEW_DUMMY_DATE
             ),
             Dining(
                 id = 0,
-                date = "2025.05.17",
+                date = PREVIEW_DUMMY_DATE,
                 type = "BREAKFAST",
                 place = "B코너",
                 priceCard = "1000",
@@ -743,14 +745,14 @@ private fun DiningScreenPreview() {
                 kcal = "786",
                 menu = listOf("밥", "국", "김치", "아침"),
                 imageUrl = "",
-                createdAt = "2025.05.17",
-                updatedAt = "2025.05.17",
+                createdAt = PREVIEW_DUMMY_DATE,
+                updatedAt = PREVIEW_DUMMY_DATE,
                 soldOutAt = "",
-                changedAt = "2025.05.17"
+                changedAt = PREVIEW_DUMMY_DATE
             ),
             Dining(
                 id = 0,
-                date = "2025.05.17",
+                date = PREVIEW_DUMMY_DATE,
                 type = "아침",
                 place = "LUNCH",
                 priceCard = "1000",
@@ -758,14 +760,14 @@ private fun DiningScreenPreview() {
                 kcal = "786",
                 menu = listOf("밥", "국", "김치", "점심"),
                 imageUrl = "",
-                createdAt = "2025.05.17",
-                updatedAt = "2025.05.17",
+                createdAt = PREVIEW_DUMMY_DATE,
+                updatedAt = PREVIEW_DUMMY_DATE,
                 soldOutAt = "",
-                changedAt = "2025.05.17"
+                changedAt = PREVIEW_DUMMY_DATE
             ),
             Dining(
                 id = 0,
-                date = "2025.05.17",
+                date = PREVIEW_DUMMY_DATE,
                 type = "DINNER",
                 place = "A코너",
                 priceCard = "1000",
@@ -773,10 +775,10 @@ private fun DiningScreenPreview() {
                 kcal = "786",
                 menu = listOf("밥", "국", "김치", "저녁"),
                 imageUrl = "",
-                createdAt = "2025.05.17",
-                updatedAt = "2025.05.17",
+                createdAt = PREVIEW_DUMMY_DATE,
+                updatedAt = PREVIEW_DUMMY_DATE,
                 soldOutAt = "",
-                changedAt = "2025.05.17"
+                changedAt = PREVIEW_DUMMY_DATE
             )
         ),
         sessionId = "",
