@@ -34,6 +34,8 @@ import `in`.koreatech.koin.core.designsystem.component.topbar.KoinTopAppBar
 import `in`.koreatech.koin.core.designsystem.noRippleClickable
 import `in`.koreatech.koin.core.designsystem.theme.RebrandKoinTheme
 import `in`.koreatech.koin.feature.callvan.R
+import `in`.koreatech.koin.feature.callvan.model.CallvanRestrictionUiState
+import `in`.koreatech.koin.feature.callvan.ui.component.CallvanBanDialog
 import `in`.koreatech.koin.feature.callvan.ui.component.CallvanConfirmBottomSheet
 import `in`.koreatech.koin.feature.callvan.ui.component.CallvanNotificationIcon
 import `in`.koreatech.koin.feature.callvan.ui.list.component.CallvanFAB
@@ -47,6 +49,7 @@ import `in`.koreatech.koin.feature.callvan.ui.list.model.CallvanItemState
 import `in`.koreatech.koin.feature.callvan.ui.list.model.CallvanListErrorType
 import `in`.koreatech.koin.feature.callvan.ui.list.model.CallvanListItemActions
 import `in`.koreatech.koin.feature.callvan.ui.list.model.CallvanListUiState
+import `in`.koreatech.koin.feature.callvan.ui.list.model.FilterBottomSheetActions
 import `in`.koreatech.koin.feature.callvan.ui.list.model.FilterBottomSheetState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -69,7 +72,6 @@ fun CallvanListScreen(
     val state by viewModel.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
-
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
             is CallvanListSideEffect.ShowSnackbar -> {
@@ -84,6 +86,7 @@ fun CallvanListScreen(
                         CallvanListErrorType.POST_AUTHOR_CANNOT_LEAVE -> R.string.callvan_error_post_author_cannot_leave
                         CallvanListErrorType.REOPEN_FAILED_FULL -> R.string.callvan_error_reopen_failed_full
                         CallvanListErrorType.REOPEN_FAILED_TIME -> R.string.callvan_error_reopen_failed_time
+                        CallvanListErrorType.NOTIFICATION_SUBSCRIPTION_FAILED -> R.string.callvan_error_notification_subscription_failed
                         CallvanListErrorType.UNKNOWN -> R.string.callvan_error_unknown
                     }
                 )
@@ -94,12 +97,16 @@ fun CallvanListScreen(
 
     LaunchedEffect(state.isLoggedIn) {
         viewModel.fetchHasNewNotification()
+        if (state.isLoggedIn) {
+            viewModel.checkNotificationSuggest()
+            // viewModel.fetchRestriction()
+        }
     }
 
     CallvanListScreenImpl(
         searchValue = state.searchValue,
         items = state.items,
-        filterState = state.filterState,
+        pendingFilterState = state.pendingFilterState,
         hasNewNotification = state.hasNewNotification,
         isLoginVisible = state.isLoginVisible,
         isFilterVisible = state.isFilterVisible,
@@ -107,8 +114,17 @@ fun CallvanListScreen(
         hasMoreItems = state.hasMoreItems,
         pendingConfirm = state.pendingConfirm,
         pendingCompletePostId = state.pendingCompletePostId,
+        showNotificationSuggest = state.showNotificationSuggest,
         onSearchValueChange = viewModel::updateSearch,
-        onFilterApply = viewModel::applyFilter,
+        onFilterItemClicked = viewModel::onFilterItemClicked,
+        onFilterReset = viewModel::resetPendingFilter,
+        onFilterApply = {
+            EventLogger.logCampusClickEvent(
+                AnalyticsConstant.Label.Callvan.CALLVAN_FILTER_APPLY,
+                ""
+            )
+            viewModel.applyPendingFilter()
+        },
         onFilterVisibleChange = viewModel::updateFilterVisible,
         onPendingConfirmChange = viewModel::updatePendingConfirm,
         onPendingCompletePostIdChange = viewModel::updatePendingCompletePostId,
@@ -126,7 +142,12 @@ fun CallvanListScreen(
         onCall = onCallClick,
         onChat = onChatClick,
         onDetailClick = onDetailClick,
-        snackbarHostState = snackbarHostState
+        onNotificationSuggestConfirm = viewModel::enableCallvanNotification,
+        onNotificationSuggestDismiss = viewModel::dismissNotificationSuggest,
+        snackbarHostState = snackbarHostState,
+        showBanDialog = state.showBanDialog,
+        restriction = state.restriction,
+        onBanDialogDismiss = { viewModel.updateBanDialogVisible(false) }
     )
 }
 
@@ -135,7 +156,7 @@ fun CallvanListScreen(
 fun CallvanListScreenImpl(
     searchValue: String,
     items: ImmutableList<CallvanListUiState>,
-    filterState: FilterBottomSheetState = FilterBottomSheetState(),
+    pendingFilterState: FilterBottomSheetState = FilterBottomSheetState(),
     hasNewNotification: Boolean = false,
     isLoginVisible: Boolean = false,
     isFilterVisible: Boolean = false,
@@ -143,18 +164,15 @@ fun CallvanListScreenImpl(
     hasMoreItems: Boolean = true,
     pendingConfirm: Pair<CallvanConfirmType, Int>? = null,
     pendingCompletePostId: Int? = null,
+    showNotificationSuggest: Boolean = false,
     onSearchValueChange: (String) -> Unit = {},
+    onFilterItemClicked: (CallvanFilterType) -> Unit = {},
+    onFilterReset: () -> Unit = {},
+    onFilterApply: () -> Unit = {},
     onFilterVisibleChange: (Boolean) -> Unit = {},
     onPendingConfirmChange: (Pair<CallvanConfirmType, Int>?) -> Unit = {},
     onPendingCompletePostIdChange: (Int?) -> Unit = {},
     onLoadMore: () -> Unit = {},
-    onFilterApply: (
-        CallvanFilterType.ListType,
-        CallvanFilterType.SortType,
-        CallvanFilterType.StatusesType,
-        ImmutableList<CallvanFilterType.DeparturesFilterType>,
-        ImmutableList<CallvanFilterType.ArrivalsFilterType>
-    ) -> Unit = { _, _, _, _, _ -> },
     onTopbarBackClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
     onWriteClick: () -> Unit = {},
@@ -168,7 +186,16 @@ fun CallvanListScreenImpl(
     onCall: (Int) -> Unit = {},
     onChat: (Int) -> Unit = {},
     onDetailClick: (Int) -> Unit = {},
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    onNotificationSuggestConfirm: () -> Unit = {},
+    onNotificationSuggestDismiss: () -> Unit = {},
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    showBanDialog: Boolean = false,
+    restriction: CallvanRestrictionUiState = CallvanRestrictionUiState(
+        isRestricted = false,
+        restrictionType = CallvanRestrictionUiState.RestrictionType.NONE,
+        restrictedUntil = null
+    ),
+    onBanDialogDismiss: () -> Unit = {}
 ) {
     val listState = rememberLazyListState()
 
@@ -188,19 +215,13 @@ fun CallvanListScreenImpl(
 
     if (isFilterVisible) {
         FilterBottomSheet(
-            onDismissRequest = { onFilterVisibleChange(false) },
-            initialListType = filterState.selectedListType,
-            initialSortType = filterState.selectedSortType,
-            initialStatusesType = filterState.selectedStatusesType,
-            initialArrivalsType = filterState.selectedArrivalsType,
-            initialDeparturesType = filterState.selectedDeparturesType,
-            onApply = { listType, sortType, statusesType, departuresFilterTypes, arrivalsFilterTypes ->
-                EventLogger.logCampusClickEvent(
-                    AnalyticsConstant.Label.Callvan.CALLVAN_FILTER_APPLY,
-                    ""
-                )
-                onFilterApply(listType, sortType, statusesType, departuresFilterTypes, arrivalsFilterTypes)
-            }
+            state = pendingFilterState,
+            actions = FilterBottomSheetActions(
+                onItemClicked = onFilterItemClicked,
+                onReset = onFilterReset,
+                onApplyClick = onFilterApply
+            ),
+            onDismissRequest = { onFilterVisibleChange(false) }
         )
     }
 
@@ -229,6 +250,14 @@ fun CallvanListScreenImpl(
                 onPendingCompletePostIdChange(null)
             },
             onDismiss = { onPendingCompletePostIdChange(null) }
+        )
+    }
+
+    if (showBanDialog) {
+        CallvanBanDialog(
+            restrictionType = restriction.restrictionType,
+            restrictedUntil = restriction.restrictedUntil,
+            onDismiss = onBanDialogDismiss
         )
     }
 
@@ -362,6 +391,16 @@ fun CallvanListScreenImpl(
             hotState = snackbarHostState,
             background = RebrandKoinTheme.colors.primary700.copy(alpha = 0.8f)
         )
+        if (showNotificationSuggest) {
+            CallvanConfirmBottomSheet(
+                title = stringResource(R.string.callvan_notification_suggest_title),
+                description = stringResource(R.string.callvan_notification_suggest_description),
+                confirmText = stringResource(R.string.callvan_notification_suggest_confirm),
+                cancelText = stringResource(R.string.callvan_notification_suggest_cancel),
+                onConfirm = onNotificationSuggestConfirm,
+                onDismiss = onNotificationSuggestDismiss
+            )
+        }
     }
 }
 
@@ -378,6 +417,20 @@ private fun CallvanListScreenPreview() {
                 CallvanListUiState(4, "담헌 앞", "천안아산역", PREVIEW_DATE, PREVIEW_TIME, 1, 8, CallvanItemState.OWNER_ACTIVE),
                 CallvanListUiState(5, PREVIEW_TERMINAL, "학교", PREVIEW_DATE, PREVIEW_TIME, 1, 8, CallvanItemState.OWNER_CLOSED)
             )
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CallvanListScreenNotificationSuggestPreview() {
+    RebrandKoinTheme {
+        CallvanListScreenImpl(
+            searchValue = "",
+            items = persistentListOf(
+                CallvanListUiState(1, PREVIEW_DEPARTURE, PREVIEW_TERMINAL, PREVIEW_DATE, PREVIEW_TIME, 1, 8, CallvanItemState.DEFAULT)
+            ),
+            showNotificationSuggest = true
         )
     }
 }
