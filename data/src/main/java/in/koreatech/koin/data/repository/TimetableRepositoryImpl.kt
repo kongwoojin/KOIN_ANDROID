@@ -2,6 +2,7 @@ package `in`.koreatech.koin.data.repository
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import `in`.koreatech.koin.data.mapper.safeApiCall
 import `in`.koreatech.koin.data.request.timetable.LectureQueryRequest
 import `in`.koreatech.koin.data.request.timetable.LecturesQueryRequest
 import `in`.koreatech.koin.data.request.timetable.TimetableFrameCreateQueryRequest
@@ -61,12 +62,12 @@ class TimetableRepositoryImpl @Inject constructor(
         }
 
     override suspend fun getTimetableLectures(timetableFrameId: Int): Result<TimetableLectures> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource.getTimetableLectures(timetableFrameId).toTimetableLectures()
         }
 
     override suspend fun getTimetableLectures(semester: String): Result<TimetableLectures> =
-        runCatching {
+        safeApiCall {
             val timetableLecturesString = timetableDataStore.getString(semester).firstOrNull().orEmpty()
             val timetableLecturesType = object : TypeToken<TimetableLectures>() {}.type
             try {
@@ -77,29 +78,29 @@ class TimetableRepositoryImpl @Inject constructor(
         }
 
     override suspend fun putTimetableLectures(lectures: TimetableLecturesQuery): Result<TimetableLectures> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource.putTimetableLectures(lectures.toTimetableLecturesQueryRequest()).toTimetableLectures()
         }
 
     override suspend fun putTimetableLectures(
         key: String,
         value: TimetableLectures
-    ): Result<TimetableLectures> =
-        runCatching {
+    ): Result<TimetableLectures> {
+        return safeApiCall {
             timetableDataStore.putString(key, gson.toJson(value))
-            return getTimetableLectures(semester = key)
-                .onSuccess {
-                    Result.success(it)
-                }.onFailure {
-                    Result.failure<TimetableLectures>(it)
-                }
         }
+            // fold avoids non-local return — safeApiCall lambda is not inline
+            .fold(
+                onSuccess = { getTimetableLectures(semester = key) },
+                onFailure = { Result.failure(it) }
+            )
+    }
 
     override suspend fun putTimetableFrame(
         id: Int,
         frame: TimetableFrameQuery
     ): Result<TimetableFrame> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource
                 .putTimetableFrame(
                     id,
@@ -114,7 +115,7 @@ class TimetableRepositoryImpl @Inject constructor(
         frameId: Int,
         lectures: List<Lecture>
     ): Result<TimetableLectures> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource
                 .postTimetableLectures(
                     LecturesQueryRequest(
@@ -128,7 +129,7 @@ class TimetableRepositoryImpl @Inject constructor(
         frameId: Int,
         lectures: List<Lecture>
     ): Result<TimetableLectures> =
-        runCatching {
+        safeApiCall {
             val info =
                 lectures.map { it.classTime to it.place }.map { (classTime, place) ->
                     TimetableLectureClassInfoRequest(classTime = classTime, classPlace = place)
@@ -157,7 +158,7 @@ class TimetableRepositoryImpl @Inject constructor(
         frameId: Int,
         lectures: List<TimetableLecture>
     ): Result<TimetableLectures> =
-        runCatching {
+        safeApiCall {
             val queryLectures =
                 lectures.map {
                     if (it.lectureId == 0) {
@@ -177,7 +178,7 @@ class TimetableRepositoryImpl @Inject constructor(
         }
 
     override suspend fun postTimetableFrame(frame: TimetableFrameCreateQuery): Result<TimetableFrame> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource
                 .postTimetableFrame(
                     TimetableFrameCreateQueryRequest(
@@ -194,17 +195,17 @@ class TimetableRepositoryImpl @Inject constructor(
         }
 
     override suspend fun postRollbackFrame(frameId: Int): Result<TimetableLectures> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource.postRollbackFrame(frameId).toTimetableLectures()
         }
 
     override suspend fun deleteTimetableFrame(frameId: Int): Result<Unit> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource.deleteTimetableFrame(frameId)
         }
 
     override suspend fun deleteTimetableLecture(id: Int): Result<Unit> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource.deleteTimetableLecture(id)
         }
 
@@ -212,12 +213,12 @@ class TimetableRepositoryImpl @Inject constructor(
         frameId: Int,
         lectureId: Int
     ): Result<Unit> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource.deleteTimetableFrameLecture(frameId, lectureId)
         }
 
     override suspend fun deleteTimetableLectures(lectureIds: List<Int>): Result<Unit> =
-        runCatching {
+        safeApiCall {
             val response = timetableRemoteDataSource.deleteTimetableLectures(lectureIds)
             if (!response.isSuccessful) {
                 throw HttpException(response)
@@ -225,7 +226,7 @@ class TimetableRepositoryImpl @Inject constructor(
         }
 
     override suspend fun deleteAllTimetableFrame(semester: String): Result<Unit> =
-        runCatching {
+        safeApiCall {
             timetableRemoteDataSource.deleteAllTimetableFrame(semester)
         }
 }
