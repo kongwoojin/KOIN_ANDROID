@@ -359,13 +359,13 @@ class TimetableActivity : KoinNavigationDrawerActivity() {
                     }
 
                     is TimetableSideEffect.Toast -> {
-                        // TODO::현재는 에러 메세지를 띄우는 용로도 토스트가 사용되기에 임시 메세지 사용, 배포 후 수정 필요
                         Timber.d("TimetableSideEffect.Toast| ${effect.message}")
                         Toast.makeText(
                             this@TimetableActivity,
-                            "인터넷 연결을 확인하고 다시 시도해주세요.",
+                            effect.message,
                             Toast.LENGTH_SHORT
                         ).show()
+                        viewModel.updateSideEffect(TimetableSideEffect.Nothing)
                     }
 
                     is TimetableSideEffect.Nothing -> Unit
