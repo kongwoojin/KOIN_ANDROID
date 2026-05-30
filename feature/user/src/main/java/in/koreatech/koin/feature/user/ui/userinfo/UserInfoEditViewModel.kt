@@ -268,7 +268,6 @@ class UserInfoEditViewModel @Inject constructor(
                 )
             }
         }
-        postSideEffect(UserInfoEditSideEffect.StartTimer)
     }
 
     fun checkVerificationCode() = intent {
