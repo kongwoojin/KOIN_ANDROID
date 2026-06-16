@@ -127,7 +127,10 @@ class ChatRoomViewModel @Inject constructor(
                     postSideEffect(ChatRoomSideEffect.BlockedByUser)
                 }
 
-                else -> Timber.e(e)
+                else -> {
+                    Timber.e(e)
+                    reduce { state.copy(isLoading = false) }
+                }
             }
         }
     }
@@ -191,6 +194,7 @@ class ChatRoomViewModel @Inject constructor(
             }
         }.onFailure {
             Timber.e(it)
+            reduce { state.copy(isLoading = false) }
         }
     }
 
