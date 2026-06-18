@@ -189,33 +189,22 @@ class SignUpStudentViewModel @Inject constructor(
         }
     }
 
-    private fun checkEmailDuplicate() = intent {
-        if (state.email == "") return@intent
-        checkEmailDuplicateUseCase("${state.email}@$KOREATECH_EMAIL_DOMAIN").onSuccess {
-            reduce {
-                state.copy(isEmailAvailable = true)
-            }
-        }.onFailure {
-            when (it) {
-                is KoinUserException.EmailConflictException -> {
-                    reduce {
-                        state.copy(isEmailAvailable = false)
+    fun signUp() = intent {
+        if (state.email.isNotEmpty()) {
+            checkEmailDuplicateUseCase("${state.email}@$KOREATECH_EMAIL_DOMAIN").onSuccess {
+                reduce { state.copy(isEmailAvailable = true) }
+            }.onFailure {
+                when (it) {
+                    is KoinUserException.EmailConflictException -> {
+                        reduce { state.copy(isEmailAvailable = false) }
                     }
-                }
 
-                else -> {
-                    // We check email validation with regex.
-                    // So, Don't check email validation from API response.
-                    reduce {
-                        state.copy(isEmailAvailable = null)
+                    else -> {
+                        reduce { state.copy(isEmailAvailable = null) }
                     }
                 }
             }
         }
-    }
-
-    fun signUp() = intent {
-        checkEmailDuplicate()
         if (state.isEmailAvailable == false) return@intent
         postStudentRegisterUseCase(
             name = state.name,
