@@ -150,6 +150,7 @@
     <string name="sign_up_user_info_department_hint">학부를 선택해주세요.</string>
     <string name="sign_up_user_info_student_number_hint">학번을 입력해주세요.</string>
     <string name="sign_up_user_info_student_number_wrong_format">올바른 학번 양식이 아닙니다. 다시 입력해 주세요.</string>
+    <string name="sign_up_user_info_sign_up_failed">회원가입에 실패했습니다.</string>
 
     <string name="sign_up_next">다음</string>
 

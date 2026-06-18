@@ -230,7 +230,7 @@ class SignUpStudentViewModel @Inject constructor(
         ).onSuccess {
             postSideEffect(SignUpStudentSideEffect.SignUpSuccess)
         }.onFailure {
-            postSideEffect(SignUpStudentSideEffect.SignUpFailure)
+            postSideEffect(SignUpStudentSideEffect.SignUpFailure(it.message ?: ""))
         }
     }
 }
