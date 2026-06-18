@@ -40,6 +40,8 @@ import `in`.koreatech.koin.core.designsystem.theme.KoinTheme
 import `in`.koreatech.koin.domain.model.dining.Dining
 import `in`.koreatech.koin.feature.dining.R
 
+private const val PREVIEW_DUMMY_DATE = "2025.05.17"
+
 @Composable
 fun DiningItemOriginal(
     dining: Dining,
@@ -262,7 +264,7 @@ private fun DiningItemOriginalPreview() {
     DiningItemOriginal(
         Dining(
             id = 0,
-            date = "2025.05.17",
+            date = PREVIEW_DUMMY_DATE,
             type = "BREAKFAST",
             place = "A코너",
             priceCard = "1000",
@@ -270,10 +272,10 @@ private fun DiningItemOriginalPreview() {
             kcal = "786",
             menu = listOf("밥", "국", "김치"),
             imageUrl = "",
-            createdAt = "2025.05.17",
-            updatedAt = "2025.05.17",
+            createdAt = PREVIEW_DUMMY_DATE,
+            updatedAt = PREVIEW_DUMMY_DATE,
             soldOutAt = "",
-            changedAt = "2025.05.17"
+            changedAt = PREVIEW_DUMMY_DATE
         ),
         context = LocalContext.current
     )
@@ -285,7 +287,7 @@ private fun DiningItemOriginalSoldoutPreview() {
     DiningItemOriginal(
         Dining(
             id = 0,
-            date = "2025.05.17",
+            date = PREVIEW_DUMMY_DATE,
             type = "아침",
             place = "A코너",
             priceCard = "1000",
@@ -293,10 +295,10 @@ private fun DiningItemOriginalSoldoutPreview() {
             kcal = "786",
             menu = listOf("밥", "국", "김치"),
             imageUrl = "",
-            createdAt = "2025.05.17",
-            updatedAt = "2025.05.17",
-            soldOutAt = "2025.05.17",
-            changedAt = "2025.05.17"
+            createdAt = PREVIEW_DUMMY_DATE,
+            updatedAt = PREVIEW_DUMMY_DATE,
+            soldOutAt = PREVIEW_DUMMY_DATE,
+            changedAt = PREVIEW_DUMMY_DATE
         ),
         context = LocalContext.current
     )
