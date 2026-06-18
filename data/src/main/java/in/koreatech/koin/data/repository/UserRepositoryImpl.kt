@@ -149,7 +149,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateUser(user: User): Result<Unit> = runCatching {
+    override suspend fun updateUser(user: User): Result<Unit> = safeApiCall {
         when (user) {
             User.Anonymous -> throw IllegalAccessException("Updating anonymous user is not supported")
             is User.Student -> {
@@ -164,12 +164,12 @@ class UserRepositoryImpl @Inject constructor(
         }
     }.onSuccess {
         userLocalDataSource.updateUserInfo(user)
-    }.mapHttpFailure(
-        e400 = KoinUserException.DataInvalidException(),
-        e401 = KoinUserException.UnauthorizedException(),
-        e404 = KoinUserException.UserNotFoundException(),
-        e409 = KoinUserException.NicknameOrEmailConflictException()
-    )
+    }.mapHttpFailure {
+        on(400) throws KoinUserException.DataInvalidException()
+        on(401) throws KoinUserException.UnauthorizedException()
+        on(404) throws KoinUserException.UserNotFoundException()
+        on(409) throws KoinUserException.NicknameOrEmailConflictException()
+    }
 
     override suspend fun deleteDeviceToken() {
         tokenLocalDataSource.removeDeviceToken()
@@ -204,146 +204,146 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun updateUserPassword(
         hashedPassword: String
     ): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.updateUserPassword(hashedPassword) // TODO: Handle error after error code PR is completed.
         }
     }
 
     override suspend fun requestSmsVerification(phoneNumber: String): Result<CodeCount> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.sendSMS(SmsSendRequest(phoneNumber)).toCodeCount()
-        }.mapHttpFailure(
-            e400 = KoinUserException.PhoneNumberInvalidException(),
-            e429 = KoinUserException.VerificationCodeRequestCountExceededException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.PhoneNumberInvalidException()
+            on(429) throws KoinUserException.VerificationCodeRequestCountExceededException()
+        }
     }
 
     override suspend fun requestEmailVerification(email: String): Result<CodeCount> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.sendEmail(EmailSendRequest(email)).toCodeCount()
-        }.mapHttpFailure(
-            e400 = KoinUserException.EmailInvalidException(),
-            e429 = KoinUserException.VerificationCodeRequestCountExceededException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.EmailInvalidException()
+            on(429) throws KoinUserException.VerificationCodeRequestCountExceededException()
+        }
     }
 
     override suspend fun verifyCertificationCode(phoneNumber: String, verificationCode: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.verifyCode(
                 SmsVerifyRequest(
                     phoneNumber = phoneNumber,
                     verificationCode = verificationCode
                 )
             )
-        }.mapHttpFailure(
-            e400 = KoinUserException.VerificationCodeInvalidException(),
-            e404 = KoinUserException.VerificationCodeExpiredException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.VerificationCodeInvalidException()
+            on(404) throws KoinUserException.VerificationCodeExpiredException()
+        }
     }
 
     override suspend fun verifyEmailCode(email: String, verificationCode: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.verifyEmailCode(
                 EmailVerifyRequest(
                     email = email,
                     verificationCode = verificationCode
                 )
             )
-        }.mapHttpFailure(
-            e400 = KoinUserException.VerificationCodeInvalidException(),
-            e404 = KoinUserException.VerificationCodeExpiredException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.VerificationCodeInvalidException()
+            on(404) throws KoinUserException.VerificationCodeExpiredException()
+        }
     }
 
     override suspend fun checkIdExists(loginId: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.idExists(loginId)
-        }.mapHttpFailure(
-            e400 = KoinUserException.LoginIdInvalidException(),
-            e404 = KoinUserException.LoginIdNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.LoginIdInvalidException()
+            on(404) throws KoinUserException.LoginIdNotFoundException()
+        }
     }
 
     override suspend fun checkIdMatchEmail(loginId: String, email: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.idMatchEmail(loginId, email)
-        }.mapHttpFailure(
-            e400 = KoinUserException.LoginIdNotMatchEmailException(),
-            e404 = KoinUserException.LoginIdNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.LoginIdNotMatchEmailException()
+            on(404) throws KoinUserException.LoginIdNotFoundException()
+        }
     }
 
     override suspend fun checkIdMatchPhone(loginId: String, phone: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.idMatchPhone(
                 loginId,
                 phone
             )
-        }.mapHttpFailure(
-            e400 = KoinUserException.LoginIdNotMatchPhoneException(),
-            e404 = KoinUserException.LoginIdNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.LoginIdNotMatchPhoneException()
+            on(404) throws KoinUserException.LoginIdNotFoundException()
+        }
     }
 
     override suspend fun resetPasswordByEmail(loginId: String, email: String, newPassword: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.resetPasswordByEmail(
                 loginId,
                 email,
                 newPassword
             )
-        }.mapHttpFailure(
-            e400 = KoinUserException.LoginIdNotMatchEmailException(),
-            e401 = KoinUserException.UnauthorizedException(),
-            e404 = KoinUserException.LoginIdNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.LoginIdNotMatchEmailException()
+            on(401) throws KoinUserException.UnauthorizedException()
+            on(404) throws KoinUserException.LoginIdNotFoundException()
+        }
     }
 
     override suspend fun resetPasswordBySms(loginId: String, phone: String, newPassword: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.resetPasswordBySms(loginId, phone, newPassword)
-        }.mapHttpFailure(
-            e400 = KoinUserException.LoginIdNotMatchPhoneException(),
-            e401 = KoinUserException.UnauthorizedException(),
-            e404 = KoinUserException.LoginIdNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.LoginIdNotMatchPhoneException()
+            on(401) throws KoinUserException.UnauthorizedException()
+            on(404) throws KoinUserException.LoginIdNotFoundException()
+        }
     }
 
     override suspend fun checkEmailExists(email: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.checkEmailExists(email)
-        }.mapHttpFailure(
-            e400 = KoinUserException.EmailInvalidException(),
-            e404 = KoinUserException.EmailNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.EmailInvalidException()
+            on(404) throws KoinUserException.EmailNotFoundException()
+        }
     }
 
     override suspend fun checkPhoneExists(phone: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.checkPhoneExists(phone)
-        }.mapHttpFailure(
-            e400 = KoinUserException.PhoneNumberInvalidException(),
-            e404 = KoinUserException.PhoneNumberNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.PhoneNumberInvalidException()
+            on(404) throws KoinUserException.PhoneNumberNotFoundException()
+        }
     }
 
     override suspend fun findLoginIdByEmail(email: String, verificationCode: String): Result<String> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.findLoginIdByEmail(EmailVerifyRequest(email, verificationCode)).loginId
-        }.mapHttpFailure(
-            e400 = KoinUserException.EmailInvalidException(),
-            e401 = KoinUserException.UnauthorizedException(),
-            e404 = KoinUserException.EmailNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.EmailInvalidException()
+            on(401) throws KoinUserException.UnauthorizedException()
+            on(404) throws KoinUserException.EmailNotFoundException()
+        }
     }
 
     override suspend fun findLoginIdBySms(phone: String, verificationCode: String): Result<String> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.findLoginIdBySms(SmsVerifyRequest(phone, verificationCode)).loginId
-        }.mapHttpFailure(
-            e400 = KoinUserException.PhoneNumberInvalidException(),
-            e401 = KoinUserException.UnauthorizedException(),
-            e404 = KoinUserException.PhoneNumberNotFoundException()
-        )
+        }.mapHttpFailure {
+            on(400) throws KoinUserException.PhoneNumberInvalidException()
+            on(401) throws KoinUserException.UnauthorizedException()
+            on(404) throws KoinUserException.PhoneNumberNotFoundException()
+        }
     }
 }

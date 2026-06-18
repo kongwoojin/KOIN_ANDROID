@@ -1,5 +1,6 @@
 package `in`.koreatech.koin.data.repository
 
+import `in`.koreatech.koin.data.mapper.safeApiCall
 import `in`.koreatech.koin.data.mapper.toBoolean
 import `in`.koreatech.koin.data.mapper.toInt
 import `in`.koreatech.koin.data.mapper.toPhoneNumber
@@ -87,7 +88,7 @@ class SignupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isUsernameDuplicatedV2(nickname: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.checkNicknameV2(nickname)
         }.mapHttpFailure {
             on(400) throws KoinUserException.NicknameInvalidException()
@@ -96,7 +97,7 @@ class SignupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isPhoneDuplicated(phone: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.checkPhoneNumberDuplicate(phone)
         }.mapHttpFailure {
             on(400) throws KoinUserException.PhoneNumberInvalidException()
@@ -136,7 +137,7 @@ class SignupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isLoginIdDuplicated(loginId: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.checkLoginId(loginId)
         }.mapHttpFailure {
             on(400) throws KoinUserException.LoginIdInvalidException()
@@ -145,7 +146,7 @@ class SignupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isEmailDuplicated(email: String): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             userRemoteDataSource.checkEmail(email)
         }.mapHttpFailure {
             on(400) throws KoinUserException.EmailInvalidException()

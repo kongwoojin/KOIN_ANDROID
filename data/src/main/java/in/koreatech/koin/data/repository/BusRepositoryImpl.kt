@@ -1,5 +1,6 @@
 package `in`.koreatech.koin.data.repository
 
+import `in`.koreatech.koin.data.mapper.safeApiCall
 import `in`.koreatech.koin.data.source.local.BusLocalDataSource
 import `in`.koreatech.koin.data.source.remote.BusRemoteDataSource
 import `in`.koreatech.koin.domain.model.bus.BusNotice
@@ -19,25 +20,25 @@ class BusRepositoryImpl @Inject constructor(
     private val busLocalDataSource: BusLocalDataSource
 ) : BusRepository {
     override suspend fun fetchBusNotice(): Result<BusNotice> {
-        return runCatching {
+        return safeApiCall {
             busRemoteDataSource.fetchBusNotice().toBusNotice()
         }
     }
 
     override suspend fun fetchShuttleTimetable(id: String): Result<ShuttleTimetable> {
-        return runCatching {
+        return safeApiCall {
             busRemoteDataSource.fetchShuttleTimetable(id).toShuttleTimetable()
         }
     }
 
     override suspend fun fetchShuttleCourses(): Result<ShuttleCourses> {
-        return runCatching {
+        return safeApiCall {
             busRemoteDataSource.fetchShuttleCourses().toShuttleCourses()
         }
     }
 
     override suspend fun fetchExpressTimetable(direction: String): Result<ExpressTimetable> {
-        return runCatching {
+        return safeApiCall {
             busRemoteDataSource.fetchExpressTimetable(direction).toExpressTimetable()
         }
     }
@@ -46,7 +47,7 @@ class BusRepositoryImpl @Inject constructor(
         number: Int,
         direction: String
     ): Result<CityTimetable> {
-        return runCatching {
+        return safeApiCall {
             busRemoteDataSource.fetchCityTimetable(number, direction).toCityTimetable()
         }
     }
@@ -58,7 +59,7 @@ class BusRepositoryImpl @Inject constructor(
         departure: String,
         arrival: String
     ): Result<List<BusSearchResult>> {
-        return runCatching {
+        return safeApiCall {
             busRemoteDataSource.fetchBusSearchResult(
                 date = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(date),
                 time = DateTimeFormatter.ofPattern("HH:mm").format(time),
@@ -70,13 +71,13 @@ class BusRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLastShownNoticeId(): Result<Int> {
-        return runCatching {
+        return safeApiCall {
             busLocalDataSource.getLastShownNoticeId()
         }
     }
 
     override suspend fun saveLastShownNoticeId(id: Int): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             busLocalDataSource.saveLastShownNoticeId(id)
         }
     }

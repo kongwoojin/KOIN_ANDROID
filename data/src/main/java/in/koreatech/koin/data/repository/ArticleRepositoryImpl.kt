@@ -1,5 +1,6 @@
 package `in`.koreatech.koin.data.repository
 
+import `in`.koreatech.koin.data.mapper.safeApiCall
 import `in`.koreatech.koin.data.request.article.ArticleModifyRequest
 import `in`.koreatech.koin.data.request.article.toRequest
 import `in`.koreatech.koin.data.response.article.ArticleKeywordWrapperResponse
@@ -336,7 +337,7 @@ class ArticleRepositoryImpl @Inject constructor(
     }
 
     override suspend fun fetchArticleLostAndFoundStats(): Result<ArticleLostAndFoundStats> {
-        return runCatching {
+        return safeApiCall {
             articleRemoteDataSource.fetchArticleLostAndFoundStats().toArticleLostAndFoundStats()
         }.mapHttpFailure { }
     }
@@ -344,7 +345,7 @@ class ArticleRepositoryImpl @Inject constructor(
     override suspend fun updateItemFound(
         articleId: Int
     ): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             val response = articleRemoteDataSource.updateItemFound(articleId)
             if (response.isSuccessful) {
                 Unit
@@ -363,7 +364,7 @@ class ArticleRepositoryImpl @Inject constructor(
         newImage: List<String>?,
         deleteImageIds: List<Int>?
     ): Result<Unit> {
-        return runCatching {
+        return safeApiCall {
             val response = articleRemoteDataSource.modifyArticleLostAndFound(
                 articleId,
                 ArticleModifyRequest(
