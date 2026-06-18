@@ -78,12 +78,46 @@ class FindPasswordVerificationViewModel @Inject constructor(
     }
 
     fun checkVerificationMethodExists() = intent {
-        if (state.isSms) {
-            checkPhoneExistsUseCase(state.verificationMethod)
+        val verificationMethod = state.verificationMethod
+        val isSms = state.isSms
+        if (isSms) {
+            checkPhoneExistsUseCase(verificationMethod)
         } else {
-            checkEmailExistsUseCase(state.verificationMethod)
+            checkEmailExistsUseCase(verificationMethod)
         }.onSuccess {
-            sendVerificationCode()
+            if (isSms) {
+                requestSmsVerificationUseCase(verificationMethod)
+            } else {
+                requestEmailVerificationUseCase(verificationMethod)
+            }.onSuccess {
+                reduce {
+                    state.copy(
+                        verificationMethodState = VerificationMethodState.Sent(
+                            remainingCount = it.remainingCount,
+                            totalCount = it.totalCount,
+                            currentCount = it.currentCount
+                        ),
+                        verificationCodeState = VerificationCodeState.None
+                    )
+                }
+                postSideEffect(FindPasswordVerificationSideEffect.StartTimer)
+            }.onFailure {
+                reduce {
+                    state.copy(
+                        verificationMethodState = when (it) {
+                            is KoinUserException.PhoneNumberInvalidException,
+                            is KoinUserException.EmailInvalidException -> VerificationMethodState.WrongFormat
+
+                            is KoinUserException.PhoneNumberNotFoundException,
+                            is KoinUserException.EmailNotFoundException -> VerificationMethodState.NotFound
+
+                            is KoinUserException.VerificationCodeRequestCountExceededException -> VerificationMethodState.CountExceeded
+
+                            else -> VerificationMethodState.Failed(it.message ?: "")
+                        }
+                    )
+                }
+            }
         }.onFailure {
             reduce {
                 state.copy(
@@ -93,42 +127,6 @@ class FindPasswordVerificationViewModel @Inject constructor(
 
                         is KoinUserException.PhoneNumberNotFoundException,
                         is KoinUserException.EmailNotFoundException -> VerificationMethodState.NotFound
-
-                        else -> VerificationMethodState.Failed(it.message ?: "")
-                    }
-                )
-            }
-        }
-    }
-
-    private fun sendVerificationCode() = intent {
-        postSideEffect(FindPasswordVerificationSideEffect.StartTimer)
-        if (state.isSms) {
-            requestSmsVerificationUseCase(state.verificationMethod)
-        } else {
-            requestEmailVerificationUseCase(state.verificationMethod)
-        }.onSuccess {
-            reduce {
-                state.copy(
-                    verificationMethodState = VerificationMethodState.Sent(
-                        remainingCount = it.remainingCount,
-                        totalCount = it.totalCount,
-                        currentCount = it.currentCount
-                    ),
-                    verificationCodeState = VerificationCodeState.None
-                )
-            }
-        }.onFailure {
-            reduce {
-                state.copy(
-                    verificationMethodState = when (it) {
-                        is KoinUserException.PhoneNumberInvalidException,
-                        is KoinUserException.EmailInvalidException -> VerificationMethodState.WrongFormat
-
-                        is KoinUserException.PhoneNumberNotFoundException,
-                        is KoinUserException.EmailNotFoundException -> VerificationMethodState.NotFound
-
-                        is KoinUserException.VerificationCodeRequestCountExceededException -> VerificationMethodState.CountExceeded
 
                         else -> VerificationMethodState.Failed(it.message ?: "")
                     }

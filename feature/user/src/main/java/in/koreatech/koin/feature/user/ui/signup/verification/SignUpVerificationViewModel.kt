@@ -76,46 +76,39 @@ class SignUpVerificationViewModel @Inject constructor(
     }
 
     fun checkPhoneNumber() = intent {
-        checkPhoneNumberDuplicateUseCase(state.phoneNumber).onSuccess {
-            reduce {
-                state.copy(
-                    phoneNumberState = VerificationMethodState.Available
-                )
+        val phoneNumber = state.phoneNumber
+        checkPhoneNumberDuplicateUseCase(phoneNumber).onSuccess {
+            reduce { state.copy(phoneNumberState = VerificationMethodState.Available) }
+            requestSmsVerificationUseCase(phoneNumber).onSuccess {
+                reduce {
+                    state.copy(
+                        phoneNumberState = VerificationMethodState.Sent(
+                            remainingCount = it.remainingCount,
+                            totalCount = it.totalCount,
+                            currentCount = it.currentCount
+                        ),
+                        verificationCodeState = VerificationCodeState.None
+                    )
+                }
+                postSideEffect(SignUpVerificationSideEffect.StartTimer)
+            }.onFailure {
+                reduce {
+                    state.copy(
+                        phoneNumberState = when (it) {
+                            is KoinUserException.PhoneNumberInvalidException -> VerificationMethodState.WrongFormat
+                            is KoinUserException.PhoneNumberNotFoundException -> VerificationMethodState.NotFound
+                            is KoinUserException.VerificationCodeRequestCountExceededException -> VerificationMethodState.CountExceeded
+                            else -> VerificationMethodState.Failed(it.message ?: "")
+                        }
+                    )
+                }
             }
-            sendVerificationCode()
         }.onFailure {
             reduce {
                 state.copy(
                     phoneNumberState = when (it) {
                         is KoinUserException.PhoneNumberInvalidException -> VerificationMethodState.WrongFormat
                         is KoinUserException.PhoneNumberConflictException -> VerificationMethodState.AlreadySignedUp
-                        else -> VerificationMethodState.Failed(it.message ?: "")
-                    }
-                )
-            }
-        }
-    }
-
-    private fun sendVerificationCode() = intent {
-        postSideEffect(SignUpVerificationSideEffect.StartTimer)
-        requestSmsVerificationUseCase(state.phoneNumber).onSuccess {
-            reduce {
-                state.copy(
-                    phoneNumberState = VerificationMethodState.Sent(
-                        remainingCount = it.remainingCount,
-                        totalCount = it.totalCount,
-                        currentCount = it.currentCount
-                    ),
-                    verificationCodeState = VerificationCodeState.None
-                )
-            }
-        }.onFailure {
-            reduce {
-                state.copy(
-                    phoneNumberState = when (it) {
-                        is KoinUserException.PhoneNumberInvalidException -> VerificationMethodState.WrongFormat
-                        is KoinUserException.PhoneNumberNotFoundException -> VerificationMethodState.NotFound
-                        is KoinUserException.VerificationCodeRequestCountExceededException -> VerificationMethodState.CountExceeded
                         else -> VerificationMethodState.Failed(it.message ?: "")
                     }
                 )

@@ -62,72 +62,55 @@ class FindIdVerificationViewModel @Inject constructor(
     }
 
     fun checkVerificationMethodExists() = intent {
-        if (state.isSms) {
-            checkPhoneExistsUseCase(state.verificationMethod)
+        val verificationMethod = state.verificationMethod
+        val isSms = state.isSms
+        if (isSms) {
+            checkPhoneExistsUseCase(verificationMethod)
         } else {
-            checkEmailExistsUseCase(state.verificationMethod)
+            checkEmailExistsUseCase(verificationMethod)
         }.onSuccess {
-            requestVerificationCode()
-        }.onFailure {
-            reduce {
-                state.copy(
-                    verificationMethodState = when (it) {
-                        is KoinUserException.PhoneNumberInvalidException,
-                        is KoinUserException.EmailInvalidException -> VerificationMethodState.WrongFormat
-
-                        is KoinUserException.PhoneNumberNotFoundException -> VerificationMethodState.NotFound
-                        else -> VerificationMethodState.Failed(it.message ?: "")
-                    }
-                )
+            reduce { state.copy(isLoading = true) }
+            if (isSms) {
+                requestSmsVerificationUseCase(verificationMethod)
+            } else {
+                requestEmailVerificationUseCase(verificationMethod)
+            }.onSuccess {
+                reduce {
+                    state.copy(
+                        verificationMethodState = VerificationMethodState.Sent(
+                            remainingCount = it.remainingCount,
+                            totalCount = it.totalCount,
+                            currentCount = it.currentCount
+                        ),
+                        verificationCodeState = VerificationCodeState.None
+                    )
+                }
+                postSideEffect(FindIdVerificationSideEffect.StartTimer)
+            }.onFailure {
+                reduce { state.copy(verificationMethodState = mapRequestVerificationError(it)) }
+            }.also {
+                reduce { state.copy(isLoading = false) }
             }
+        }.onFailure {
+            reduce { state.copy(verificationMethodState = mapCheckExistsError(it)) }
         }
     }
 
-    private fun requestVerificationCode() = intent {
-        reduce {
-            state.copy(
-                isLoading = true
-            )
-        }
-        if (state.isSms) {
-            requestSmsVerificationUseCase(state.verificationMethod)
-        } else {
-            requestEmailVerificationUseCase(state.verificationMethod)
-        }.onSuccess {
-            reduce {
-                state.copy(
-                    verificationMethodState = VerificationMethodState.Sent(
-                        remainingCount = it.remainingCount,
-                        totalCount = it.totalCount,
-                        currentCount = it.currentCount
-                    ),
-                    verificationCodeState = VerificationCodeState.None
-                )
-            }
-            postSideEffect(FindIdVerificationSideEffect.StartTimer)
-        }.onFailure {
-            reduce {
-                state.copy(
-                    verificationMethodState = when (it) {
-                        is KoinUserException.PhoneNumberInvalidException,
-                        is KoinUserException.EmailInvalidException -> VerificationMethodState.WrongFormat
+    private fun mapRequestVerificationError(throwable: Throwable): VerificationMethodState = when (throwable) {
+        is KoinUserException.PhoneNumberInvalidException,
+        is KoinUserException.EmailInvalidException -> VerificationMethodState.WrongFormat
+        is KoinUserException.PhoneNumberNotFoundException,
+        is KoinUserException.EmailNotFoundException -> VerificationMethodState.NotFound
+        is KoinUserException.VerificationCodeRequestCountExceededException -> VerificationMethodState.CountExceeded
+        else -> VerificationMethodState.Failed(throwable.message ?: "")
+    }
 
-                        is KoinUserException.PhoneNumberNotFoundException,
-                        is KoinUserException.EmailNotFoundException -> VerificationMethodState.NotFound
-
-                        is KoinUserException.VerificationCodeRequestCountExceededException -> VerificationMethodState.CountExceeded
-
-                        else -> VerificationMethodState.Failed(it.message ?: "")
-                    }
-                )
-            }
-        }.also {
-            reduce {
-                state.copy(
-                    isLoading = false
-                )
-            }
-        }
+    private fun mapCheckExistsError(throwable: Throwable): VerificationMethodState = when (throwable) {
+        is KoinUserException.PhoneNumberInvalidException,
+        is KoinUserException.EmailInvalidException -> VerificationMethodState.WrongFormat
+        is KoinUserException.PhoneNumberNotFoundException,
+        is KoinUserException.EmailNotFoundException -> VerificationMethodState.NotFound
+        else -> VerificationMethodState.Failed(throwable.message ?: "")
     }
 
     fun checkVerificationCode() = intent {
