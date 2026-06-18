@@ -25,6 +25,7 @@ import `in`.koreatech.koin.domain.model.user.User
 import `in`.koreatech.koin.domain.model.user.UserType
 import `in`.koreatech.koin.domain.repository.UserRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -205,8 +206,12 @@ class UserRepositoryImpl @Inject constructor(
         hashedPassword: String
     ): Result<Unit> {
         return runCatching {
-            userRemoteDataSource.updateUserPassword(hashedPassword) // TODO: Handle error after error code PR is completed.
-        }
+            userRemoteDataSource.updateUserPassword(hashedPassword)
+        }.onFailure { if (it is CancellationException) throw it }
+            .mapHttpFailure {
+                on(400) throws KoinUserException.DataInvalidException()
+                on(401) throws KoinUserException.UnauthorizedException()
+            }
     }
 
     override suspend fun requestSmsVerification(phoneNumber: String): Result<CodeCount> {
